@@ -1,0 +1,216 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=main.bjl
+FileGroup1=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=javaobject
+NumberOfFiles=1
+NumberOfLibraries=3
+NumberOfModules=0
+Version=7.51
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+	#AdditionalJar: xmlbeans-3.1.0.jar
+	#AdditionalJar: poi-4.1.0.jar
+	#AdditionalJar: poi-ooxml-4.1.0.jar
+	#AdditionalJar: poi-ooxml-schemas-4.1.0.jar
+	#AdditionalJar: commons-collections4-4.1.jar
+	#AdditionalJar: commons-compress-1.18.jar
+	#AdditionalJar: commons-math3-3.6.1.jar
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+	Private Label1 As Label
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub Button1_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	
+	fc.SetExtensionFilter("docx",Array As String("*.docx"))
+	Dim path As String=fc.ShowOpen(MainForm)
+	If File.Exists(path,"") Then
+		replace(path)
+	Else
+		Label1.Text="未选中"
+		Return
+	End If
+	Dim filename As String
+	filename=File.GetName(path).Replace(".docx","")&"-removed.docx"
+	Label1.Text="完成，保存为该文件目录的"&filename
+End Sub
+
+Sub replace(filepath As String)
+	Dim doc As JavaObject = OpenDocx(filepath,"")
+	replaceForParagraph(doc)
+	replaceForTables(doc)
+	SaveDocument(doc, File.GetFileParent(filepath) , File.GetName(filepath).Replace(".docx","")&"-removed.docx")
+End Sub
+
+Sub replaceForParagraph(jo As JavaObject)
+	Dim paragraphs As List = jo.RunMethod("getParagraphs", Null)
+	For Each p As JavaObject In paragraphs
+
+		Dim runs As List = p.RunMethod("getRuns", Null)
+		Dim previousIsChinese As Boolean=False
+		Dim nextIsChinese As Boolean=False
+		If runs.IsInitialized Then
+			Dim index As Int=-1
+			For Each r As JavaObject In runs
+				index=index+1
+				Dim text As String = r.RunMethod("getText", Array(0))
+				'Log(text)
+				text=replaceFullwidthCharacters(text)
+				If isChinese(text)=False Then
+					Try
+						Dim nextText As String
+						nextText=replaceFullwidthCharacters(getRunText(runs,index+1))
+						nextIsChinese=isChinese(nextText)
+					Catch
+						'Log(LastException)
+						nextIsChinese=False
+					End Try
+					If previousIsChinese=False And nextIsChinese=False Then
+						r.RunMethod("setText", Array("", 0))
+					Else
+						Log("previous: "&getRunText(runs,index-1))
+						Log(text)
+						Log("next: "&getRunText(runs,index+1))
+					End If
+					previousIsChinese=False
+				Else
+					previousIsChinese=True
+				End If
+
+			Next
+		End If
+	Next
+End Sub
+
+Sub getRunText(runs As List,index As Int) As String
+	Try
+		Dim run As JavaObject=runs.Get(index)
+		Return run.RunMethod("getText", Array(0))
+	Catch
+		Return ""
+	End Try
+End Sub
+
+Sub replaceForTables(doc As JavaObject)
+	Dim tables As List = doc.RunMethod("getTables", Null)
+	For Each tbl As JavaObject In tables
+		Dim rows As List = tbl.RunMethod("getRows", Null)
+		For Each row As JavaObject In rows
+			Dim cells As List = row.RunMethod("getTableCells", Null)
+			For Each cell As JavaObject In cells
+				replaceForParagraph(cell)
+			Next
+		Next
+	Next
+End Sub
+
+Sub replaceFullwidthCharacters(text As String) As String
+	text=text.Replace("“","")
+	text=text.Replace("”","")
+	text=text.Replace("’","")
+	text=text.Replace("–","")
+	Return text
+End Sub
+
+Sub SaveDocument(doc As JavaObject, Dir As String, FileName As String)
+	Dim out As OutputStream = File.OpenOutput(Dir, FileName, False)
+	doc.RunMethod("write", Array(out))
+	out.Close
+End Sub
+
+Sub OpenDocx(Dir As String, FileName As String) As JavaObject
+	Dim in As InputStream = File.OpenInput(Dir, FileName)
+	Dim document As JavaObject
+	document.InitializeNewInstance("org.apache.poi.xwpf.usermodel.XWPFDocument", _
+       Array(in))
+	Return document
+End Sub
+
+
+Sub isChinese(text As String) As Boolean
+	Dim jo As JavaObject
+	jo=Me
+	Return jo.RunMethod("isChinese",Array As String(text))
+End Sub
+
+#If JAVA
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextBoundsType;
+
+public static double MeasureMultilineTextHeight(Font f, String text, double width) throws Exception {
+  Method m = Class.forName("com.sun.javafx.scene.control.skin.Utils").getDeclaredMethod("computeTextHeight",
+  Font.class, String.class, double.class, TextBoundsType.class);
+  m.setAccessible(true);
+  return (Double)m.invoke(null, f, text, width, TextBoundsType.LOGICAL);
+  }
+
+private static boolean isChinese(char c) {
+
+    Character.UnicodeBlock ub = Character.UnicodeBlock.of(c);
+
+    if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS || ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS
+
+            || ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A || ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+
+            || ub == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION || ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS
+
+            || ub == Character.UnicodeBlock.GENERAL_PUNCTUATION) {
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
+
+
+// 完整的判断中文汉字和符号
+
+public static boolean isChinese(String strName) {
+
+    char[] ch = strName.toCharArray();
+
+    for (int i = 0; i < ch.length; i++) {
+
+        char c = ch[i];
+
+        if (isChinese(c)) {
+
+            return true;
+
+        }
+
+    }
+
+    return false;
+
+}
+#End If
+
+
