@@ -1,0 +1,83 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=main.bjl
+File2=smiley.png
+FileGroup1=Default Group
+FileGroup2=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=jpoi
+Library4=javaobject
+NumberOfFiles=2
+NumberOfLibraries=4
+NumberOfModules=0
+Version=7.51
+@EndOfDesignText@
+#Region  Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 400 
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.SetFormStyle("UNIFIED")
+	MainForm.RootPane.LoadLayout("main")
+	MainForm.Show
+End Sub
+
+Sub Read
+	Dim wb As PoiWorkbook
+	wb.InitializeExisting(File.DirApp,"test.xlsx","")
+	Dim sheet1 As PoiSheet
+	sheet1= wb.GetSheet(0)
+
+	For Each row As PoiRow In sheet1.Rows
+		For Each cell As PoiCell In row.Cells
+			File.WriteString(File.DirApp,row.RowNumber&"-"&cell.ColumnIndex&".html",cell.Value)
+		Next
+	Next
+	wb.Close
+	
+End Sub
+
+Sub Refill
+	Dim wb As PoiWorkbook
+	wb.InitializeExisting(File.DirApp,"test.xlsx","")
+	
+	Dim sheet1 As PoiSheet
+	sheet1= wb.GetSheet(0)
+	Dim rowIndex As Int=1
+	
+	For Each row As PoiRow In sheet1.Rows
+		
+		Dim cellIndex As Int=1
+		For Each cell As PoiCell In row.Cells
+			Dim filename As String=row.RowNumber&"-"&cell.ColumnIndex&".html"
+			If File.Exists(File.DirApp,filename) Then
+				Dim cellStyle As PoiCellStyle=cell.CellStyle
+				Dim newCell As PoiCell
+				newCell=row.CreateCellString(cell.ColumnIndex,File.ReadString(File.DirApp,row.RowNumber&"-"&cell.ColumnIndex&".html"))
+				newCell.CellStyle=cellStyle
+			End If
+			cellIndex=cellIndex+1
+		Next
+		rowIndex=rowIndex+1
+	Next
+	wb.Save(File.DirApp,"new.xlsx")
+	wb.Close
+End Sub
+
+
+Sub Button2_MouseClicked (EventData As MouseEvent)
+	Refill
+End Sub
+
+Sub Button1_MouseClicked (EventData As MouseEvent)
+	Read
+End Sub
