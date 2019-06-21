@@ -163,15 +163,17 @@ Sub OCRButton_MouseClicked (EventData As MouseEvent)
 	bc.Initialize(currentBox.Width,currentBox.Height)
 	Log(currentBox.Width)
     Log(currentBox.Height)
-    Dim img As Image=ImageView1.GetImage
+	Dim img As B4XBitmap=ImageView1.GetImage
 	
 	Dim cropped As B4XBitmap
-	cropped=bc.Bitmap.Crop(left,top,width,height)
-	Dim out As OutputStream
-	out=File.OpenOutput(File.DirApp,"out.bmp",False)
-	cropped.WriteToStream(out,100,"bmp")
-	out.Close
-
+	cropped=img.Crop(left,top,width,height)
+	'Dim out As OutputStream
+	'out=File.OpenOutput(File.DirApp,"out.jpg",False)
+	'cropped.WriteToStream(out,100,"JPEG")
+	'out.Close
+	wait for (OCR.tesseract(cropped,"chi_sim")) complete (result As String)
+	OneboxTextArea.Text=result
+	fx.Clipboard.SetString(result)
 
 End Sub
 

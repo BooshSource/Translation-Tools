@@ -7,6 +7,6 @@ ModuleBreakpoints2=
 ModuleClosedNodes0=
 ModuleClosedNodes1=
 ModuleClosedNodes2=
-NavigationStack=Main,iv_MouseDragged,267,0,Visual Designer,ImageViewer.bjl,-100,3,Main,SelectionBox,258,2,Main,ImageView1_MousePressed,300,0,OCR,tesseract,5,0,Main,loadAndShowImages,202,0,Main,iv_MousePressed,286,0,Main,swithImage,241,0,Main,ImageView1_MouseClicked,304,6,Main,OCRButton_MouseClicked,135,6
+NavigationStack=Main,SelectionBox,258,2,Main,ImageView1_MousePressed,300,0,Main,loadAndShowImages,202,0,Main,iv_MousePressed,286,0,Main,swithImage,241,0,Main,ImageView1_MouseClicked,304,6,Project,import,28,0,Main,OCRButton_MouseClicked,145,6,OCR,isTesseractInstalled,50,0,OCR,tesseract,13,6
 SelectedBuild=0
 VisibleModules=1,2
