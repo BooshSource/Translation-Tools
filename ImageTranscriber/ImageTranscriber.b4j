@@ -1,0 +1,356 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=box.png
+File2=Editor.bjl
+File3=ImageView.bjl
+File4=ImageViewer.bjl
+File5=main.bjl
+File6=rightPane.bjl
+File7=white.png
+FileGroup1=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+FileGroup4=Default Group
+FileGroup5=Default Group
+FileGroup6=Default Group
+FileGroup7=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=jshell
+Library4=apachestringutilsb4j
+Library5=json
+Library6=xui views
+Module1=Project
+Module2=OCR
+NumberOfFiles=7
+NumberOfLibraries=6
+NumberOfModules=2
+Version=7.51
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+
+	Private tesseractInstalled As Boolean
+	Private CheckBox1 As CheckBox
+	Private ComboBox1 As ComboBox
+	Private langmap As Map
+	Private BoxesListView As ListView
+	Private ImageComboBox As ComboBox
+	Private ImageScrollPane As ScrollPane
+	Private OneboxTextArea As TextArea
+	Private SplitPane1 As SplitPane
+	Private ImageView1 As ImageView
+	Private currentProject As Project 
+	Private Pane1 As Pane
+	Type PositionData (PressedX As Int, PressedY As Int)
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.AlwaysOnTop=True
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+	Dim sh As Shell
+	sh.Initialize("sh","tesseract",Null)
+	sh.run(10000)
+	langmap.Initialize
+	Dim langlist As List
+	langlist=File.ReadList(File.DirApp,"lang.conf")
+	For i=0 To langlist.Size-1 Step 2
+		langmap.Put(langlist.Get(i),langlist.Get(i+1))
+	Next
+	
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub initUI
+    For Each item As String In langmap.Keys
+		ComboBox1.Items.Add(item)
+    Next
+	ComboBox1.SelectedIndex=0
+	SplitPane1.LoadLayout("ImageViewer")
+	SplitPane1.LoadLayout("rightPane")
+	ImageScrollPane.LoadLayout("ImageView",600,1000)
+End Sub
+
+Sub scan
+	Dim args As List
+	args.Initialize
+	args.AddAll(Array As String("image.png","output","-l",langmap.Get(ComboBox1.Value)))
+	Dim sh1 As Shell
+	Log(File.Exists(File.Combine(File.DirApp,"tesseract-ocr"),"tesseract.exe"))
+	If tesseractInstalled Then
+		sh1.Initialize("sh1","tesseract",args)
+    Else
+		sh1.Initialize("sh1",File.Combine(File.Combine(File.DirApp,"tesseract-ocr"),"tesseract"),args)
+	End If 
+	sh1.WorkingDirectory = File.Combine(File.DirApp,"tesseract-ocr")
+	sh1.run(100000)
+End Sub
+
+Sub sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	If Success And ExitCode = 0 Then
+		Log("Success")
+		Log(StdOut)
+		tesseractInstalled=True
+	Else
+		Log("Error: " & StdErr)
+		tesseractInstalled=False
+	End If
+End Sub
+
+Sub sh1_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	If Success And ExitCode = 0 Then
+		Log("Success")
+		Log(StdOut)
+		OneboxTextArea.Text=File.ReadString(File.Combine(File.DirApp,"tesseract-ocr"),"output.txt")
+		fx.Clipboard.SetString(OneboxTextArea.Text)
+
+		MainForm.Title="tesseract-clipboard "&"结果已经复制到剪贴板。"
+	Else
+		Log("Error: " & StdErr)
+
+		MainForm.Title="tesseract-clipboard "&"识别失败"
+	End If
+End Sub
+
+Sub CheckBox1_CheckedChange(Checked As Boolean)
+	MainForm.AlwaysOnTop=Checked
+End Sub
+
+Sub ComboBox1_SelectedIndexChanged(Index As Int, Value As Object)
+	Log(Value)
+	Log(langmap.Get(Value))
+End Sub
+
+Sub isSentenceEnd(line As String) As Boolean
+	If line.EndsWith(".") Or line.EndsWith("!") Or line.EndsWith("?") Or line.EndsWith(";") Or line.EndsWith(Chr(34)) Then
+		Return True
+	Else
+		Return False
+	End If
+End Sub
+
+Sub PreviousButton_MouseClicked (EventData As MouseEvent)
+	swithImage("previous")
+End Sub
+
+Sub OCRButton_MouseClicked (EventData As MouseEvent)
+
+	Dim currentBox As ImageView
+	Dim lbl As Label=BoxesListView.SelectedItem
+	currentBox=lbl.Tag
+	Dim left,top,width,height As Int
+	left=currentBox.Left
+	top=currentBox.Top
+	width=currentBox.Width
+	height=currentBox.Height
+	Log(width)
+	Log(height)
+	
+	Dim bc As BitmapCreator
+	bc.Initialize(currentBox.Width,currentBox.Height)
+	Log(currentBox.Width)
+    Log(currentBox.Height)
+    Dim img As Image=ImageView1.GetImage
+	
+	Dim cropped As B4XBitmap
+	cropped=bc.Bitmap.Crop(left,top,width,height)
+	Dim out As OutputStream
+	out=File.OpenOutput(File.DirApp,"out.bmp",False)
+	cropped.WriteToStream(out,100,"bmp")
+	out.Close
+
+
+End Sub
+
+Sub NextButton_MouseClicked (EventData As MouseEvent)
+	swithImage("next")
+End Sub
+
+Sub ImageComboBox_SelectedIndexChanged(Index As Int, Value As Object)
+	
+End Sub
+
+Sub CleanButton_MouseClicked (EventData As MouseEvent)
+	Dim su As ApacheSU
+	Dim result As String
+	Dim list1 As List
+	list1.Initialize
+	list1.AddAll(su.SplitWithSeparator(OneboxTextArea.Text,CRLF))
+	Log(list1)
+	For Each line As String In list1
+		Log(line)
+		If line="" Or line=" " Then
+			Continue
+		End If
+		If isSentenceEnd(line)=False Then
+			result=result&" "&line
+		Else
+			result=result&" "&line&CRLF
+		End If
+	Next
+
+	Dim list2 As List
+	list2.Initialize
+	list2.AddAll(su.SplitWithSeparator(result,CRLF))
+	result=""
+	For Each line As String In list2
+		result=result&line.Trim&CRLF&CRLF
+	Next
+	OneboxTextArea.Text=result
+	fx.Clipboard.SetString(OneboxTextArea.Text)
+End Sub
+
+Sub MenuBar1_Action
+	Dim mi As MenuItem
+	mi=Sender
+	Select mi.Text
+		Case "新建项目"
+			initProject(True)
+		Case "打开项目"
+			initProject(False)
+		Case "保存"
+			currentProject.save
+		Case "导入图片文件夹"
+			Dim dc As DirectoryChooser
+			dc.Initialize
+			Dim dirPath As String=dc.Show(MainForm)
+			If File.Exists(dirPath,"") Then
+				currentProject.import(dirPath)
+				loadAndShowImages
+			End If
+		Case "导出文本"
+			
+		Case "关闭项目"
+			Dim currentProject As Project
+			Pane1.RemoveAllNodes
+		Case "退出"
+			ExitApplication
+	End Select
+End Sub
+
+Sub loadAndShowImages
+	For Each imgMap As Map In currentProject.imgList
+		ImageComboBox.Items.Add(imgMap.Get("filename"))
+	Next	
+	showImage(0)
+End Sub
+
+Sub initProject(isNew As Boolean)
+	If currentProject.IsInitialized=False Then
+		Dim fc As FileChooser
+		fc.Initialize
+		fc.SetExtensionFilter("project file",Array As String("*.itp"))
+		Dim path As String
+		If isNew Then
+			path=fc.ShowSave(MainForm)
+		Else
+			path=fc.ShowOpen(MainForm)
+		End If
+		
+		If path<>"" Then
+			currentProject.Initialize(path,isNew)
+			Pane1.LoadLayout("Editor")
+			initUI
+		End If
+		
+		If isNew=False Then
+			loadAndShowImages
+		End If
+	Else
+		fx.Msgbox(MainForm,"请先关闭打开的项目","")
+	End If
+End Sub
+
+Public Sub swithImage(direction As String)
+	Dim index As Int
+	index=ImageComboBox.SelectedIndex
+	Select direction
+		Case "next"
+			index=Min(index+1,currentProject.imgList.Size-1)
+
+		Case "previous"
+		    index=Max(0,index-1)
+	End Select
+    showImage(index)
+End Sub
+
+Sub showImage(index As Int)
+	Dim filename As String
+	Dim dirPath As String= currentProject.projectFile.get("dirPath")
+	Dim imgMap As Map=currentProject.imgList.Get(index)
+	filename=imgMap.Get("filename")
+	Dim img As Image=fx.LoadImage(dirPath,filename)
+	ImageView1.SetImage(img)
+	ImageView1.Width=img.Width
+	ImageView1.Height=img.Height
+    ImageScrollPane.InnerNode.PrefHeight=img.Height
+	ImageScrollPane.InnerNode.PrefWidth=img.Width
+	ImageComboBox.SelectedIndex=index
+End Sub
+
+Sub SelectionBox As ImageView
+	Dim iv As ImageView
+	iv.Initialize("iv")
+	iv.SetImage(fx.LoadImage(File.DirAssets,"box.png"))
+	Return iv
+End Sub
+
+Sub iv_MouseDragged (EventData As MouseEvent)
+	Dim view As B4XView = Sender
+	If EventData.X>view.Width/2 Then
+		view.Width=EventData.X
+		view.Height=EventData.Y
+	Else
+		Dim pd As PositionData = view.Tag
+		Dim ParentX As Int = EventData.X + view.Left
+		Dim ParentY As Int = EventData.Y + view.Top
+		view.Left = ParentX - pd.PressedX
+		view.Top = ParentY - pd.PressedY
+	End If
+End Sub
+
+Sub iv_MousePressed (EventData As MouseEvent)
+	Dim view As B4XView = Sender
+	Dim pd As PositionData
+	pd.PressedX = EventData.X
+	pd.PressedY = EventData.Y
+	view.Tag = pd
+End Sub
+
+Sub ImageView1_MouseClicked (EventData As MouseEvent)
+	If EventData.ClickCount=2 Then
+		Dim view As B4XView = Sender
+		Dim iv As ImageView
+		iv=SelectionBox
+		Dim pane As Pane
+		pane=ImageView1.Parent
+		Dim pd As PositionData = view.Tag
+		pane.AddNode(iv,pd.PressedX+EventData.X,pd.PressedY+EventData.Y,200,200)
+		Dim lbl As Label
+		lbl.Initialize("")
+		lbl.Text="Box"&(BoxesListView.Items.Size+1)
+		lbl.Tag=iv
+		BoxesListView.Items.Add(lbl)
+	End If
+End Sub
+
+Sub ImageView1_MousePressed (EventData As MouseEvent)
+	Dim view As B4XView = Sender
+	Dim pd As PositionData
+	pd.PressedX = EventData.X
+	pd.PressedY = EventData.Y
+	view.Tag = pd
+End Sub
