@@ -15,20 +15,15 @@ Version=7.51
 @EndOfDesignText@
 #Region Project Attributes 
 	#MainFormWidth: 600
-	#MainFormHeight: 600 
-	#AdditionalJar: xmlbeans-3.1.0.jar
-	#AdditionalJar: poi-4.1.0.jar
-	#AdditionalJar: poi-ooxml-4.1.0.jar
-	#AdditionalJar: poi-ooxml-schemas-4.1.0.jar
-	#AdditionalJar: commons-collections4-4.1.jar
-	#AdditionalJar: commons-compress-1.18.jar
-	#AdditionalJar: commons-math3-3.6.1.jar
+	#MainFormHeight: 300
 #End Region
 
 Sub Process_Globals
 	Private fx As JFX
 	Private MainForm As Form
 	Private Label1 As Label
+	Private DirButton As Button
+	Private FileButton As Button
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
@@ -45,25 +40,28 @@ Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
 	Return True
 End Sub
 
-Sub Button1_MouseClicked (EventData As MouseEvent)
+
+
+
+
+Sub FileButton_MouseClicked (EventData As MouseEvent)
 	Dim fc As FileChooser
 	fc.Initialize
 	
 	fc.SetExtensionFilter("docx",Array As String("*.docx"))
 	Dim path As String=fc.ShowOpen(MainForm)
+	Dim filename As String=File.GetName(path)
 	If File.Exists(path,"") Then
-		Log(getBitext(path))
-	Else
-		Label1.Text="未选中"
-		Return
+		Label1.Text="generating..."
+		Dim filesMap As Map
+		filesMap.Initialize
+		filesMap.Put(filename,getBitext(path))
+		SaveToXLSX(filesMap)
 	End If
-	Dim filename As String
-	filename=File.GetName(path).Replace(".docx","")&"-removed.docx"
-	Label1.Text="完成，保存为该文件目录的"&filename
 End Sub
 
-
-Sub Button2_MouseClicked (EventData As MouseEvent)
+Sub DirButton_MouseClicked (EventData As MouseEvent)
+	Label1.Text="generating..."
 	Dim dc As DirectoryChooser
 	dc.Initialize
 	Dim dir As String=dc.Show(MainForm)
@@ -71,7 +69,9 @@ Sub Button2_MouseClicked (EventData As MouseEvent)
 	filesMap.Initialize
 	If File.Exists(dir,"") Then
 		For Each filename As String In File.ListFiles(dir)
-			filesMap.Put(filename,getBitext(File.Combine(dir,filename)))
+			If filename.EndsWith(".docx") Then
+				filesMap.Put(filename,getBitext(File.Combine(dir,filename)))
+			End If
 		Next
 	End If
 	Log(filesMap)
@@ -94,6 +94,7 @@ Sub SaveToXLSX(filesMap As Map)
 		Next
 	Next
 	wb.Save(File.DirApp,"out.xlsx")
+	Label1.Text="out.xlsx is generated at this program's directory"
 End Sub
 
 
@@ -143,14 +144,6 @@ Sub getText(doc As JavaObject) As String
 	Dim extractor As JavaObject
 	extractor.InitializeNewInstance("org.apache.poi.xwpf.extractor.XWPFWordExtractor",Array(doc))
 	Return extractor.RunMethod("getText",Null)
-End Sub
-
-Sub replaceFullwidthCharacters(text As String) As String
-	text=text.Replace("“","")
-	text=text.Replace("”","")
-	text=text.Replace("’","")
-	text=text.Replace("–","")
-	Return text
 End Sub
 
 Sub OpenDocx(Dir As String, FileName As String) As JavaObject
@@ -225,6 +218,4 @@ public static boolean isChinese(String strName) {
 
 }
 #End If
-
-
 
