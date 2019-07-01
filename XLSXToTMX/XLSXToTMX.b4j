@@ -1,0 +1,97 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=main.bjl
+FileGroup1=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=jpoi
+Library4=xml2map
+Library5=xmlbuilder
+Module1=TMX
+Module2=XMLUtils
+NumberOfFiles=1
+NumberOfLibraries=5
+NumberOfModules=2
+Version=7.51
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Public MainForm As Form
+	Private tmList As List
+	Private tmIndex As Map
+	Private Label1 As Label
+	Private ExportButton As Button
+	Private ReadButton As Button
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+	tmIndex.Initialize
+	tmList.Initialize
+	ExportButton.Enabled=False
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub ReadButton_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	fc.SetExtensionFilter("xlsx",Array As String("*.xlsx"))
+	Dim path As String=fc.ShowOpen(MainForm)
+	If File.Exists(path,"") Then
+		Dim wb As PoiWorkbook
+		wb.InitializeExisting(path,"","")
+		Dim sheet As PoiSheet
+		sheet=wb.GetSheet(0)
+		Dim i As Int=0
+		For Each row As PoiRow In sheet.Rows
+			If row.RowNumber=0 Then
+				For Each cell As PoiCell In row.Cells
+					Dim head As String=cell.ValueString
+					If head.Contains("-") Then
+						tmIndex.Put(cell.ColumnIndex,head)
+					End If
+				Next
+				Log(tmIndex)
+			Else
+				Dim map1 As Map
+				map1.Initialize
+				For Each cell As PoiCell In row.Cells
+					If tmIndex.ContainsKey(cell.ColumnIndex) Then
+						Dim lang As String=tmIndex.Get(cell.ColumnIndex)
+						map1.Put(lang,cell.Value)
+						tmList.Add(map1)
+					End If
+				Next
+			End If
+			i=i+1
+		Next
+		wb.Close
+		Log("done")
+		Label1.Text="reading complete"
+		ExportButton.Enabled=True
+	End If
+End Sub
+
+Sub ExportButton_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	fc.SetExtensionFilter("tmx",Array As String("*.tmx"))
+	Dim path As String=fc.ShowSave(MainForm)
+	If path<>"" Then
+		TMX.export(tmList,path)
+		Label1.Text="exported"
+	End If
+
+End Sub
