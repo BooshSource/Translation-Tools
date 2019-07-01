@@ -1,0 +1,230 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=main.bjl
+FileGroup1=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=javaobject
+Library4=apachestringutilsb4j
+Library5=jpoi
+NumberOfFiles=1
+NumberOfLibraries=5
+NumberOfModules=0
+Version=7.51
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+	#AdditionalJar: xmlbeans-3.1.0.jar
+	#AdditionalJar: poi-4.1.0.jar
+	#AdditionalJar: poi-ooxml-4.1.0.jar
+	#AdditionalJar: poi-ooxml-schemas-4.1.0.jar
+	#AdditionalJar: commons-collections4-4.1.jar
+	#AdditionalJar: commons-compress-1.18.jar
+	#AdditionalJar: commons-math3-3.6.1.jar
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+	Private Label1 As Label
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+	Dim matcher As Matcher
+	matcher = Regex.Matcher("[a-zA-Z]","中文text")
+	Log(matcher.Find)
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub Button1_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	
+	fc.SetExtensionFilter("docx",Array As String("*.docx"))
+	Dim path As String=fc.ShowOpen(MainForm)
+	If File.Exists(path,"") Then
+		Log(getBitext(path))
+	Else
+		Label1.Text="未选中"
+		Return
+	End If
+	Dim filename As String
+	filename=File.GetName(path).Replace(".docx","")&"-removed.docx"
+	Label1.Text="完成，保存为该文件目录的"&filename
+End Sub
+
+
+Sub Button2_MouseClicked (EventData As MouseEvent)
+	Dim dc As DirectoryChooser
+	dc.Initialize
+	Dim dir As String=dc.Show(MainForm)
+	Dim filesMap As Map
+	filesMap.Initialize
+	If File.Exists(dir,"") Then
+		For Each filename As String In File.ListFiles(dir)
+			filesMap.Put(filename,getBitext(File.Combine(dir,filename)))
+		Next
+	End If
+	Log(filesMap)
+	SaveToXLSX(filesMap)
+End Sub
+
+Sub SaveToXLSX(filesMap As Map)
+	Dim wb As PoiWorkbook
+	wb.InitializeNew(True)
+	Dim sheet1 As PoiSheet = wb.AddSheet("Sheet1",0)
+	Dim rowIndex As Int=0
+	For Each filename As String In filesMap.Keys
+		Dim segments As List = filesMap.Get(filename)
+		For Each bitext As List In segments
+			Dim row As PoiRow = sheet1.CreateRow(rowIndex)
+			row.CreateCellString(0,bitext.Get(0))
+			row.CreateCellString(1,bitext.Get(1))
+			row.CreateCellString(2,filename)
+			rowIndex=rowIndex+1
+		Next
+	Next
+	wb.Save(File.DirApp,"out.xlsx")
+End Sub
+
+
+Sub getBitext(path As String) As List
+	Dim doc As JavaObject=OpenDocx(path,"")
+	Dim text As String=getText(doc)
+	Dim lines As List
+	lines.Initialize
+	lines.AddAll(Regex.Split(CRLF,text))
+	Dim chineseLines As List
+	chineseLines.Initialize
+	Dim englishLines As List
+	englishLines.Initialize
+	For i=0 To lines.Size-1
+		Dim line As String=lines.Get(i)
+		Dim matcher As Matcher
+		matcher = Regex.Matcher("[a-zA-Z]",line)
+		Dim existEnglish As Boolean=matcher.Find
+		If isChinese(line) And existEnglish Then
+			Continue
+		Else if isChinese(line) And existEnglish=False Then
+			Try
+				Dim englisgLine As String=lines.Get(i+1)
+				If isChinese(englisgLine)=False Then
+					englishLines.Add(englisgLine)
+					chineseLines.Add(line)
+				End If
+			Catch
+				Log(LastException)
+			End Try
+		End If
+	Next
+	Dim segments As List
+	segments.Initialize
+
+	For j=0 To chineseLines.Size-1
+		Dim bitext As List
+		bitext.Initialize
+		bitext.Add(chineseLines.Get(j))
+		bitext.Add(englishLines.Get(j))
+		segments.Add(bitext)
+	Next
+	Return segments
+End Sub
+
+Sub getText(doc As JavaObject) As String
+	Dim extractor As JavaObject
+	extractor.InitializeNewInstance("org.apache.poi.xwpf.extractor.XWPFWordExtractor",Array(doc))
+	Return extractor.RunMethod("getText",Null)
+End Sub
+
+Sub replaceFullwidthCharacters(text As String) As String
+	text=text.Replace("“","")
+	text=text.Replace("”","")
+	text=text.Replace("’","")
+	text=text.Replace("–","")
+	Return text
+End Sub
+
+Sub OpenDocx(Dir As String, FileName As String) As JavaObject
+	Dim in As InputStream = File.OpenInput(Dir, FileName)
+	Dim document As JavaObject
+	document.InitializeNewInstance("org.apache.poi.xwpf.usermodel.XWPFDocument", _
+       Array(in))
+	Return document
+End Sub
+
+
+Sub isChinese(text As String) As Boolean
+	Dim jo As JavaObject
+	jo=Me
+	Return jo.RunMethod("isChinese",Array As String(text))
+End Sub
+
+#If JAVA
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextBoundsType;
+
+public static double MeasureMultilineTextHeight(Font f, String text, double width) throws Exception {
+  Method m = Class.forName("com.sun.javafx.scene.control.skin.Utils").getDeclaredMethod("computeTextHeight",
+  Font.class, String.class, double.class, TextBoundsType.class);
+  m.setAccessible(true);
+  return (Double)m.invoke(null, f, text, width, TextBoundsType.LOGICAL);
+  }
+
+private static boolean isChinese(char c) {
+
+    Character.UnicodeBlock ub = Character.UnicodeBlock.of(c);
+
+    if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS || ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS
+
+            || ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A || ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+
+            || ub == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION || ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS
+
+            || ub == Character.UnicodeBlock.GENERAL_PUNCTUATION) {
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
+
+
+// 完整的判断中文汉字和符号
+
+public static boolean isChinese(String strName) {
+
+    char[] ch = strName.toCharArray();
+
+    for (int i = 0; i < ch.length; i++) {
+
+        char c = ch[i];
+
+        if (isChinese(c)) {
+
+            return true;
+
+        }
+
+    }
+
+    return false;
+
+}
+#End If
+
+
+
