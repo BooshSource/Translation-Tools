@@ -1,8 +1,8 @@
  #include <FileConstants.au3>
  #include <File.au3>
 
-Global $FontSize=6
-Global $TextItemWidth=50
+Global $FontSize = 6
+Global $TextItemWidth = 50
 
 if FileExists(@WorkingDir&"\config.ini")=0 Then
    IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", "6")
@@ -11,6 +11,7 @@ Else
    $FontSize = IniRead (@WorkingDir&"\config.ini", "General", "FontSize", 6 )
    $TextItemWidth = IniRead (@WorkingDir&"\config.ini", "General", "TextItemWidth", 50 )
 Endif
+ConsoleWrite($FontSize)
 
 Local $hFileOpen = FileOpen("out.txt", $FO_READ)
 If $hFileOpen = -1 Then
@@ -40,7 +41,7 @@ While True
    $filename=$lineSplit[5]
    if $previousFilename<>$filename Then
 	  if $previousFilename<>"" Then
-	  	  $doc.close()
+		 SaveAndClose($doc,@WorkingDir &"\"& $previousFilename & ".psd")
 	  EndIf
       $doc = $app.open(@WorkingDir &"\"& $fileName)
       $previousFilename=$filename
@@ -56,6 +57,13 @@ While True
    ConsoleWrite($text & @CRLF)
    addLayer($doc,$X,$Y,$width,$height,$text,$index)
 WEnd
+
+SaveAndClose($doc,@WorkingDir &"\"& $previousFilename & ".psd")
+
+Func SaveAndClose($doc,$path)
+   SaveAs($doc,$path)
+   $doc.close(2); don't save
+EndFunc
 
 MsgBox(64,"","Layers Added")
 
@@ -95,9 +103,33 @@ Func addLayer($doc,$X,$Y,$width,$height,$text,$index)
    $textLayer.Kind=2
    $textLayer.textItem.Contents = $text
    $textLayer.textItem.Kind= 2 ;paragraph
-   $textLayer.textItem.size   = $FontSize
+   ConsoleWrite("size:"&$FontSize)
+   $textLayer.textItem.Size   = Int($FontSize)
    $Position[0]=$X-10
    $Position[1]=$Y-10
    $textLayer.textItem.Position=$Position
    $textLayer.textItem.Width=$TextItemWidth
+EndFunc
+
+Func SaveAsJPG($doc,$path)
+   Dim $ObjSaveOptions=ObjCreate("Photoshop.JPEGSaveOptions")
+   ;if @error Then Exit
+   With $ObjSaveOptions
+	.EmbedColorProfile = True
+	.FormatOptions = 1
+	.Matte = 1
+	.Quality = 12
+   EndWith
+   ConsoleWrite($path&@CRLF)
+   $doc.SaveAS($path,$ObjSaveOptions,True,2)
+EndFunc
+
+Func SaveAs($doc,$path)
+   Dim $ObjSaveOptions=ObjCreate("Photoshop.PhotoshopSaveOptions")
+   ;if @error Then Exit
+   With $ObjSaveOptions
+	.Layers = True
+   EndWith
+   ConsoleWrite($path&@CRLF)
+   $doc.SaveAS($path,$ObjSaveOptions,True,2)
 EndFunc
