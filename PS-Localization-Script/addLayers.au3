@@ -3,13 +3,16 @@
 
 Global $FontSize = 6
 Global $TextItemWidth = 50
+Global $TextItemHeight = 50
 
 if FileExists(@WorkingDir&"\config.ini")=0 Then
    IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", "6")
    IniWrite(@WorkingDir&"\config.ini", "General", "TextItemWidth", "50")
+   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemHeight", "50")
 Else
    $FontSize = IniRead (@WorkingDir&"\config.ini", "General", "FontSize", 6 )
    $TextItemWidth = IniRead (@WorkingDir&"\config.ini", "General", "TextItemWidth", 50 )
+   $TextItemHeight = IniRead (@WorkingDir&"\config.ini", "General", "TextItemHeight", 50 )
 Endif
 ConsoleWrite($FontSize)
 
@@ -21,6 +24,7 @@ EndIf
 
 Global $app = ObjCreate("Photoshop.Application")
 $app.Preferences.RulerUnits = 1
+$app.Preferences.TypeUnits = 5
 
 Global $doc
 
@@ -58,7 +62,7 @@ While True
    addLayer($doc,$X,$Y,$width,$height,$text,$index)
 WEnd
 
-SaveAndClose($doc,@WorkingDir &"\"& $previousFilename & ".psd")
+;SaveAndClose($doc,@WorkingDir &"\"& $previousFilename & ".psd")
 
 Func SaveAndClose($doc,$path)
    SaveAs($doc,$path)
@@ -108,7 +112,10 @@ Func addLayer($doc,$X,$Y,$width,$height,$text,$index)
    $Position[0]=$X-10
    $Position[1]=$Y-10
    $textLayer.textItem.Position=$Position
-   $textLayer.textItem.Width=$TextItemWidth
+   ConsoleWrite(int($width) & @CRLF)
+   ConsoleWrite($doc.Width)
+   $textLayer.textItem.Width=int($TextItemWidth)
+   $textLayer.textItem.Height=int($TextItemHeight)
 EndFunc
 
 Func SaveAsJPG($doc,$path)
