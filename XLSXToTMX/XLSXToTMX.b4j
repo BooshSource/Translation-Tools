@@ -59,6 +59,7 @@ Sub ReadButton_MouseClicked (EventData As MouseEvent)
 		firstLangTM.Initialize
 		Dim firstLangIndex As Int
 		Dim i As Int=0
+		Dim skipRow As Boolean=False
 		For Each row As PoiRow In sheet.Rows
 			If row.RowNumber=0 Then
 				For Each cell As PoiCell In row.Cells
@@ -86,10 +87,19 @@ Sub ReadButton_MouseClicked (EventData As MouseEvent)
 							Else
 								firstLangTM.Put(text,"")
 							End If
+						Else
+							If firstLangTM.ContainsKey(text) Then
+								skipRow=True
+								Exit
+							End If
 						End If	
 						tuMap.Put(lang,text)
 					End If
 				Next
+				If skipRow Then
+					skipRow=False
+					Continue
+				End If
 				If tuMap.Size<>0 Then
 					tmList.Add(tuMap)
 				End If

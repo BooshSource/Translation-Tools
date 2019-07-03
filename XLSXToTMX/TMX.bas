@@ -83,7 +83,7 @@ Sub exportQuick(tmList As List, savePath As String)
 		For Each langcode As String In tuMap.Keys
 			Dim seg As String
 			seg=tuMap.Get(langcode)
-
+			seg=EscapeXml(seg)
 			sb.Append($"<tuv xml:lang="${langcode}">"$).Append(CRLF)
 			sb.Append("    ").Append("<seg>").Append(seg).Append("</seg>").Append(CRLF)
 			sb.Append("</tuv>").Append(CRLF)
@@ -92,4 +92,27 @@ Sub exportQuick(tmList As List, savePath As String)
 	Next
 	sb.Append(tail)
 	File.WriteString(savePath,"",sb.ToString)
+End Sub
+
+Public Sub EscapeXml(Raw As String) As String
+	Dim sb As StringBuilder
+	sb.Initialize
+	For i = 0 To Raw.Length - 1
+		Dim c As Char = Raw.CharAt(i)
+		Select c
+			Case QUOTE
+				sb.Append("&quot;")
+			Case "'"
+				sb.Append("&apos;")
+			Case "<"
+				sb.Append("&lt;")
+			Case ">"
+				sb.Append("&gt;")
+			Case "&"
+				sb.Append("&amp;")
+			Case Else
+				sb.Append(c)
+		End Select
+	Next
+	Return sb.ToString
 End Sub
