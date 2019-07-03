@@ -57,3 +57,39 @@ Sub export(tmList As List,savePath As String)
 	End Try
 	File.WriteString(savePath,"",tmxstring)
 End Sub
+
+Sub exportQuick(tmList As List, savePath As String)
+	Dim sb As StringBuilder
+	sb.Initialize
+	Dim head As String=$"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<tmx version="1.4">
+    <header>
+        <creationtool>BasicCAT</creationtool>
+        <creationtoolversion>1.0.0</creationtoolversion>
+        <adminlang>en</adminlang>
+        <srclang>en</srclang>
+        <segtype>sentence</segtype>
+        <o-tmf>BasicCAT</o-tmf>
+    </header>
+    <body>
+	"$
+	Dim tail As String=$"</body>
+</tmx>"$
+	Dim addedTM As Map
+	addedTM.Initialize
+	sb.Append(head)
+	For Each tuMap As Map In tmList
+		sb.Append("<tu>").Append(CRLF)
+		For Each langcode As String In tuMap.Keys
+			Dim seg As String
+			seg=tuMap.Get(langcode)
+
+			sb.Append($"<tuv xml:lang="${langcode}">"$).Append(CRLF)
+			sb.Append("    ").Append("<seg>").Append(seg).Append("</seg>").Append(CRLF)
+			sb.Append("</tuv>").Append(CRLF)
+		Next
+		sb.Append("</tu>").Append(CRLF)
+	Next
+	sb.Append(tail)
+	File.WriteString(savePath,"",sb.ToString)
+End Sub

@@ -45,6 +45,7 @@ Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
 End Sub
 
 Sub ReadButton_MouseClicked (EventData As MouseEvent)
+	tmList.Clear
 	Dim fc As FileChooser
 	fc.Initialize
 	fc.SetExtensionFilter("xlsx",Array As String("*.xlsx"))
@@ -54,26 +55,44 @@ Sub ReadButton_MouseClicked (EventData As MouseEvent)
 		wb.InitializeExisting(path,"","")
 		Dim sheet As PoiSheet
 		sheet=wb.GetSheet(0)
+		Dim firstLangTM As Map
+		firstLangTM.Initialize
+		Dim firstLangIndex As Int
 		Dim i As Int=0
 		For Each row As PoiRow In sheet.Rows
 			If row.RowNumber=0 Then
 				For Each cell As PoiCell In row.Cells
 					Dim head As String=cell.ValueString
 					If head.Contains("-") Then
+						If tmIndex.Size=0 Then
+							firstLangIndex=cell.ColumnIndex
+						End If
 						tmIndex.Put(cell.ColumnIndex,head)
+						Dim emptyMap As Map
+						emptyMap.Initialize
 					End If
 				Next
 				Log(tmIndex)
 			Else
-				Dim map1 As Map
-				map1.Initialize
+				Dim tuMap As Map
+				tuMap.Initialize
 				For Each cell As PoiCell In row.Cells
 					If tmIndex.ContainsKey(cell.ColumnIndex) Then
 						Dim lang As String=tmIndex.Get(cell.ColumnIndex)
-						map1.Put(lang,cell.Value)
-						tmList.Add(map1)
+						Dim text As String=cell.Value
+						If cell.ColumnIndex=firstLangIndex Then
+							If firstLangTM.ContainsKey(text) Then
+								Exit
+							Else
+								firstLangTM.Put(text,"")
+							End If
+						End If	
+						tuMap.Put(lang,text)
 					End If
 				Next
+				If tuMap.Size<>0 Then
+					tmList.Add(tuMap)
+				End If
 			End If
 			i=i+1
 		Next
@@ -90,7 +109,7 @@ Sub ExportButton_MouseClicked (EventData As MouseEvent)
 	fc.SetExtensionFilter("tmx",Array As String("*.tmx"))
 	Dim path As String=fc.ShowSave(MainForm)
 	If path<>"" Then
-		TMX.export(tmList,path)
+		TMX.exportQuick(tmList,path)
 		Label1.Text="exported"
 	End If
 
