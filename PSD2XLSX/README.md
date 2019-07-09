@@ -1,0 +1,1 @@
+Extract layers' names from psd and save to xlsx files.

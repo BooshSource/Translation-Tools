@@ -1,0 +1,82 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=main.bjl
+FileGroup1=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=jshell
+Library4=jpoi
+NumberOfFiles=1
+NumberOfLibraries=4
+NumberOfModules=0
+Version=7.51
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+	Private Label1 As Label
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+	Label1.Text="先选择psd文件夹，再点导出"
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub ExportButton_MouseClicked (EventData As MouseEvent)
+	If File.Exists(Label1.Text,"") Then
+		export(Label1.Text)
+	End If
+End Sub
+
+Sub ChooseButton_MouseClicked (EventData As MouseEvent)
+	Dim dc As DirectoryChooser
+	dc.Initialize
+	Dim psdDir As String=dc.Show(MainForm)
+    Label1.Text=psdDir
+End Sub
+
+Sub export(psdDir As String)
+	Dim sh As Shell
+	sh.Initialize("sh",File.Combine(File.DirApp,"export.exe"),Null)
+	sh.WorkingDirectory=psdDir
+	sh.Run(-1)
+	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	If Success Then
+		merge(psdDir)
+	End If
+End Sub
+
+Sub merge(psdDir As String)
+	Dim wb As PoiWorkbook
+	wb.InitializeNew(True)
+	Dim sheet1 As PoiSheet = wb.AddSheet("Sheet1",0)
+	Dim index As Int
+	Dim fileList As List=File.ListFiles(psdDir)
+	fileList.Sort(True)
+	For Each filename As String In fileList
+		If filename.EndsWith(".txt") Then
+			Dim lines As List = File.ReadList(psdDir,filename)
+			For Each line As String In lines
+				Dim row As PoiRow = sheet1.CreateRow(index)
+				row.CreateCellString(0,File.GetName(filename).Replace(".txt",""))
+				row.CreateCellString(2,line)
+				index=index+1
+			Next
+		End If
+	Next
+	wb.Save(psdDir,"out.xlsx")
+	Label1.Text="导出完成"
+End Sub
