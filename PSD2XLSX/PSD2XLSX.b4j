@@ -21,6 +21,8 @@ Sub Process_Globals
 	Private fx As JFX
 	Private MainForm As Form
 	Private Label1 As Label
+	Private currentPath As String
+	Private TextArea1 As TextArea
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
@@ -38,6 +40,8 @@ End Sub
 Sub ExportButton_MouseClicked (EventData As MouseEvent)
 	If File.Exists(Label1.Text,"") Then
 		export(Label1.Text)
+	Else
+		fx.Msgbox(MainForm,"请选择目录","")
 	End If
 End Sub
 
@@ -46,9 +50,11 @@ Sub ChooseButton_MouseClicked (EventData As MouseEvent)
 	dc.Initialize
 	Dim psdDir As String=dc.Show(MainForm)
     Label1.Text=psdDir
+	currentPath=psdDir
 End Sub
 
 Sub export(psdDir As String)
+	Label1.Text="导出中。。。"
 	Dim sh As Shell
 	sh.Initialize("sh",File.Combine(File.DirApp,"export.exe"),Null)
 	sh.WorkingDirectory=psdDir
@@ -60,6 +66,13 @@ Sub export(psdDir As String)
 End Sub
 
 Sub merge(psdDir As String)
+	Dim filterWords As List
+	filterWords.Initialize
+	For Each word As String In Regex.Split(CRLF,TextArea1.Text)
+		If word.Trim<>"" Then
+			filterWords.Add(word)
+		End If
+	Next
 	Dim wb As PoiWorkbook
 	wb.InitializeNew(True)
 	Dim sheet1 As PoiSheet = wb.AddSheet("Sheet1",0)
@@ -70,13 +83,47 @@ Sub merge(psdDir As String)
 		If filename.EndsWith(".txt") Then
 			Dim lines As List = File.ReadList(psdDir,filename)
 			For Each line As String In lines
-				Dim row As PoiRow = sheet1.CreateRow(index)
-				row.CreateCellString(0,File.GetName(filename).Replace(".txt",""))
-				row.CreateCellString(2,line)
-				index=index+1
+				Log(line)
+				Dim shouldBeFiltered As Boolean=False
+				For Each filterWord As String In filterWords
+					Log(filterWord)
+					Log(line.Contains(filterWord))
+					If line.Contains(filterWord) Then
+						shouldBeFiltered=True
+						Exit
+					End If
+				Next
+				If shouldBeFiltered=False Then
+					Dim row As PoiRow = sheet1.CreateRow(index)
+					row.CreateCellString(0,File.GetName(filename).Replace(".txt",""))
+					row.CreateCellString(2,line)
+					index=index+1
+				End If
 			Next
 		End If
 	Next
 	wb.Save(psdDir,"out.xlsx")
+	Select fx.Msgbox2(MainForm,"导出成功，是否打开目录？","","好","取消","",fx.MSGBOX_CONFIRMATION)
+		Case fx.DialogResponse.POSITIVE
+			fx.ShowExternalDocument(File.GetUri(currentPath,""))
+	End Select
 	Label1.Text="导出完成"
+End Sub
+
+Sub ImportButton_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	Dim path As String = fc.ShowOpen(MainForm)
+	If File.Exists(path,"") Then
+		Try
+			For Each line As String In File.ReadList(path,"")
+				TextArea1.Text=TextArea1.Text&CRLF&line
+			Next
+			
+		Catch
+			Log(LastException)
+			fx.Msgbox(MainForm,"导入失败","")
+		End Try
+	End If
+	
 End Sub
