@@ -63,7 +63,7 @@ Func handleArtLayers($ArtLayers)
 	  Dim $content = $artLayer.name
 	  $content=StringRegExpReplace($content,"\r","<r/>")
 	  $content=StringRegExpReplace($content,"\n","<n/>")
-	  $content=StringReplace($content," ","")
+	  ;$content=StringReplace($content," ","")
 	  ConsoleWrite($content& @CRLF)
 	  ;if $artLayer.Kind=2 Then
 		;ConsoleWrite("name:" & $artLayer.name & @CRLF)

@@ -21,7 +21,7 @@ If @error = 4 Then
 EndIf
 
 
-Local $hFileOpen = FileOpen("完整版记忆.txt", $FO_READ)
+Local $hFileOpen = FileOpen("翻译记忆.txt", $FO_READ)
 If $hFileOpen = -1 Then
    MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file.")
    Return False
@@ -30,8 +30,9 @@ EndIf
 While True
    $line=FileReadLine($hFileOpen)
    if @error Then ExitLoop
-   $source=StringLeft($line, StringInStr($line,@TAB)-1)
-   $text=StringRight($line, StringLen($line) - StringInStr($line,@TAB))
+   $items=StringSplit($line,"	")
+   $source=$items[1]
+   $text=$items[2]
    if $source<>"" Then
 	  $oDictionary.Add($source, $text)
    EndIf
@@ -44,11 +45,11 @@ FileClose($hFileOpen)
     $psdName=$aFileList[$i]
     $fileName=StringReplace($psdName,".psd","",-1, $STR_NOCASESENSE)
     ConsoleWrite("filename"&$fileName)
-    $txtName=$fileName&".txt"
-    if FileExists($txtName) Then
-        ConsoleWrite($txtName)
+    ;$txtName=$fileName&".txt"
+    ;if FileExists($txtName) Then
+    ;    ConsoleWrite($txtName)
         Import($fileName)
-    EndIf
+    ;EndIf
  Next
 
 
@@ -84,20 +85,33 @@ Func handleArtLayers($ArtLayers)
 	  $source=$ArtLayer.name
 	  $source=StringRegExpReplace($source,"\r","<r/>")
 	  $source=StringRegExpReplace($source,"\n","<n/>")
-	  $source=StringReplace($source," ","")
+	  ;$source=StringReplace($source," ","")
+	  Dim $bounds[4]
+	  $bounds=$ArtLayer.Bounds
+	  ConsoleWrite($bounds[0] & @CRLF) ;x
+	  ConsoleWrite($bounds[1] & @CRLF) ;y
+	  ConsoleWrite($bounds[2] & @CRLF) ;width
+	  ConsoleWrite($bounds[3] & @CRLF) ;height
+	  Dim $position[2] ; two values
+	  $position[0]=$bounds[0]
+	  $position[1]=$bounds[1]
 	  if $oDictionary.Exists($source) Then
+		 ConsoleWrite("exists")
 		 if $oDictionary.Item($source)<>$source Then
 			if $ArtLayer.Kind=1  Then
 			   $ArtLayer.clear()
 			   $ArtLayer.Kind = 2
+			   $ArtLayer.textItem.Position=$position
 			EndIf
+			$ArtLayer.textItem.Kind=2 ;paragraph
 			$ArtLayer.textItem.Contents = $oDictionary.Item($source)
-			if $font<>"" Then
+			if $font="" Then
 			   $ArtLayer.textItem.Font= "NotoSansHans-Regular"
+			Else
+			   $ArtLayer.textItem.Font= $font
 			EndIf
 			$ArtLayer.textItem.Justification=2 ;center
 			$ArtLayer.textItem.Capitalization=2 ;capcase
-			$ArtLayer.textItem.Kind=2 ;paragraph
 		 EndIf
 	  Endif
    Next
