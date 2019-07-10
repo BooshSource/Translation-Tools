@@ -1,0 +1,218 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=export.bjl
+File2=import.bjl
+File3=main.bjl
+FileGroup1=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=jshell
+Library4=jpoi
+NumberOfFiles=3
+NumberOfLibraries=4
+NumberOfModules=0
+Version=7.51
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+#End Region
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+	Private Label1 As Label
+	Private currentPath As String
+	Private TextArea1 As TextArea
+	Private CheckBox1 As CheckBox
+	Private RefillLabel As Label
+	Private TabPane1 As TabPane
+	Private handleNontextCheckBox As CheckBox
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+	TabPane1.LoadLayout("export","导出文字")
+	TabPane1.LoadLayout("import","文字回填")
+	Label1.Text="先选择psd文件夹，再点导出"
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub ExportButton_MouseClicked (EventData As MouseEvent)
+	If File.Exists(Label1.Text,"") Then
+		export(Label1.Text)
+	Else
+		fx.Msgbox(MainForm,"请选择目录","")
+	End If
+End Sub
+
+Sub ChooseButton_MouseClicked (EventData As MouseEvent)
+	Dim dc As DirectoryChooser
+	dc.Initialize
+	Dim psdDir As String=dc.Show(MainForm)
+    Label1.Text=psdDir
+	currentPath=psdDir
+End Sub
+
+Sub export(psdDir As String)
+	Label1.Text="导出中。。。"
+	Dim sh As Shell
+	sh.Initialize("sh",File.Combine(File.DirApp,"export.exe"),Null)
+	sh.WorkingDirectory=psdDir
+	sh.Run(-1)
+	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	If Success Then
+		merge(psdDir)
+	End If
+End Sub
+
+Sub merge(psdDir As String)
+	Dim filterWords As List
+	filterWords.Initialize
+	For Each word As String In Regex.Split(CRLF,TextArea1.Text)
+		If word.Trim<>"" Then
+			filterWords.Add(word)
+		End If
+	Next
+	Dim wb As PoiWorkbook
+	wb.InitializeNew(True)
+	Dim sheet1 As PoiSheet = wb.AddSheet("Sheet1",0)
+	Dim index As Int=1
+	
+	Dim row As PoiRow = sheet1.CreateRow(0)
+	row.CreateCellString(0,"filename")
+	row.CreateCellString(1,"layerName")
+	row.CreateCellString(2,"source")
+	row.CreateCellString(3,"target")
+	row.CreateCellString(4,"note")
+	
+	Dim fileList As List=File.ListFiles(psdDir)
+	fileList.Sort(True)
+	For Each filename As String In fileList
+		If filename.EndsWith(".txt") Then
+			Dim lines As List = File.ReadList(psdDir,filename)
+			For Each line As String In lines
+				Log(line)
+				Dim isNonText As Boolean=False
+				If line.EndsWith("non-text") Then
+					line=line.Replace("	non-text","")
+					isNonText=True
+				End If
+				Dim shouldBeFiltered As Boolean=False
+				For Each filterWord As String In filterWords
+					Log(filterWord)
+					Log(line.Contains(filterWord))
+					If line.Contains(filterWord) Then
+						shouldBeFiltered=True
+						Exit
+					End If
+				Next
+				If shouldBeFiltered=False Then
+					Dim row As PoiRow = sheet1.CreateRow(index)
+					row.CreateCellString(0,File.GetName(filename).Replace(".txt",""))
+					row.CreateCellString(1,line)
+					Dim source As String
+					If CheckBox1.Checked Then
+						source=line.Replace(" ","")
+					Else
+						source=line
+					End If
+					row.CreateCellString(2,source)
+					If isNonText Then
+						row.CreateCellString(4,"non-text")
+					End If
+					index=index+1
+				End If
+			Next
+		End If
+	Next
+	wb.Save(psdDir,"out.xlsx")
+	openFolder
+	Label1.Text="导出完成"
+End Sub
+
+Sub ImportButton_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	Dim path As String = fc.ShowOpen(MainForm)
+	If File.Exists(path,"") Then
+		Try
+			For Each line As String In File.ReadList(path,"")
+				TextArea1.Text=TextArea1.Text&CRLF&line
+			Next
+		Catch
+			Log(LastException)
+			fx.Msgbox(MainForm,"导入失败","")
+		End Try
+	End If
+	
+End Sub
+
+Sub openFolder
+	Select fx.Msgbox2(MainForm,"操作成功，是否打开目录？","","好","取消","",fx.MSGBOX_CONFIRMATION)
+		Case fx.DialogResponse.POSITIVE
+			fx.ShowExternalDocument(File.GetUri(currentPath,""))
+	End Select
+End Sub
+
+Sub refill(psdDir As String)
+	RefillLabel.Text="导入中。。。"
+	Dim sh As Shell
+	sh.Initialize("sh",File.Combine(File.DirApp,"import.exe"),Null)
+	sh.WorkingDirectory=psdDir
+	sh.Run(-1)
+	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	If Success Then
+		openFolder
+	End If
+End Sub
+
+Sub RefillButton_MouseClicked (EventData As MouseEvent)
+	If File.Exists(currentPath,"翻译记忆.txt") Then
+		refill(currentPath)
+	End If
+End Sub
+
+Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
+	If File.Exists(currentPath,"") Then
+		Dim sb As StringBuilder
+		sb.Initialize
+		Dim fc As FileChooser
+		fc.Initialize
+		fc.SetExtensionFilter("XLSX files",Array As String("*.xlsx"))
+		Dim path As String=fc.ShowOpen(MainForm)
+		If File.Exists(path,"") Then
+			Dim wb As PoiWorkbook
+			wb.InitializeExisting(path,"","")
+			Dim sheet1 As PoiSheet
+			sheet1=wb.GetSheet(0)
+			For Each row As PoiRow In sheet1.Rows
+				If row.GetCell(4).IsInitialized Then
+					If handleNontextCheckBox.Checked=False And row.GetCell(4).Value="non-text" Then
+						Continue
+					End If
+				End If
+				sb.Append(row.GetCell(1).Value).Append("	").Append(row.GetCell(3).Value).Append(CRLF)
+			Next
+		End If
+		File.WriteString(currentPath,"翻译记忆.txt",sb.ToString)
+		RefillLabel.Text="xlsx处理成功"
+	End If
+End Sub
+
+Sub ChooseImDirButton_MouseClicked (EventData As MouseEvent)
+	Dim dc As DirectoryChooser
+	dc.Initialize
+	Dim psdDir As String=dc.Show(MainForm)
+	RefillLabel.Text=psdDir
+	currentPath=psdDir
+End Sub
