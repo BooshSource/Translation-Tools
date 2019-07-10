@@ -60,19 +60,18 @@ EndFunc
 Func handleArtLayers($ArtLayers)
    For $i=$ArtLayers.Count to 1 Step -1
 	  $artLayer=$ArtLayers.Item($i)
-	  Dim $content = $artLayer.name
 	  ;$content=StringReplace($content," ","")
-	  ConsoleWrite($content& @CRLF)
+	  ConsoleWrite($artLayer.name & @CRLF)
 	  if $artLayer.Kind=2 Then
 		 $content=$artLayer.textItem.Contents
 		 $content=StringRegExpReplace($content,"\r\n"," ")
 		 $content=StringRegExpReplace($content,"\r"," ")
 	     $content=StringRegExpReplace($content,"\n"," ")
 		;ConsoleWrite("name:" & $artLayer.name & @CRLF)
-		 $text=$text & $content & @CRLF ;& $Layer.name & @TAB
+		 $text=$text & $artLayer.name & @TAB & $content & @CRLF
 	  Else
 	;	 $textForNonTextItem=$textForNonTextItem & $content & @CRLF
-		 $text=$text & $content & @TAB & "non-text" & @CRLF
+		 $text=$text & $artLayer.name & @TAB & "non-text" & @CRLF
 	  EndIf
    Next
 EndFunc

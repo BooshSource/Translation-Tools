@@ -1,6 +1,6 @@
 ﻿ModuleBookmarks0=
 ModuleBreakpoints0=
 ModuleClosedNodes0=
-NavigationStack=Main,export,46,0,Main,ChooseButton_MouseClicked,39,0,Main,merge,110,0,Main,ChooseImDirButton_MouseClicked,189,1,Main,Process_Globals,15,0,Visual Designer,import.bjl,-100,3,Main,AppStart,26,0,Main,refill,153,1,Main,RefillButton_MouseClicked,163,1,Main,ChooseXLSXButton_MouseClicked,184,6
+NavigationStack=Main,ChooseImDirButton_MouseClicked,189,1,Visual Designer,import.bjl,-100,3,Main,AppStart,26,0,Main,Process_Globals,10,0,Main,RefillButton_MouseClicked,165,1,Main,refill,151,1,Main,openFolder,145,0,Main,ImportButton_MouseClicked,139,0,Main,merge,118,6,Main,ChooseXLSXButton_MouseClicked,185,6
 SelectedBuild=0
 VisibleModules=

@@ -102,16 +102,22 @@ Sub merge(psdDir As String)
 			Dim lines As List = File.ReadList(psdDir,filename)
 			For Each line As String In lines
 				Log(line)
+				Dim col1,col2 As String
+				col1=Regex.Split("	",line)(0)
+				col2=Regex.Split("	",line)(1)
 				Dim isNonText As Boolean=False
-				If line.EndsWith("non-text") Then
-					line=line.Replace("	non-text","")
+				Dim source As String
+				If col2="non-text" Then
 					isNonText=True
+					source=col1
+				Else
+					source=col2
 				End If
 				Dim shouldBeFiltered As Boolean=False
 				For Each filterWord As String In filterWords
 					Log(filterWord)
-					Log(line.Contains(filterWord))
-					If line.Contains(filterWord) Then
+					Log(source.Contains(filterWord))
+					If source.Contains(filterWord) Then
 						shouldBeFiltered=True
 						Exit
 					End If
@@ -119,12 +125,10 @@ Sub merge(psdDir As String)
 				If shouldBeFiltered=False Then
 					Dim row As PoiRow = sheet1.CreateRow(index)
 					row.CreateCellString(0,File.GetName(filename).Replace(".txt",""))
-					row.CreateCellString(1,line)
-					Dim source As String
+					row.CreateCellString(1,col1)
+					
 					If CheckBox1.Checked Then
-						source=line.Replace(" ","")
-					Else
-						source=line
+						source=source.Replace(" ","")
 					End If
 					row.CreateCellString(2,source)
 					If isNonText Then
@@ -196,6 +200,9 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 			Dim sheet1 As PoiSheet
 			sheet1=wb.GetSheet(0)
 			For Each row As PoiRow In sheet1.Rows
+				If row.RowNumber=0 Then
+					continue
+				End If
 				If row.GetCell(4).IsInitialized Then
 					If handleNontextCheckBox.Checked=False And row.GetCell(4).Value="non-text" Then
 						Continue
