@@ -103,8 +103,14 @@ Sub merge(psdDir As String)
 			For Each line As String In lines
 				Log(line)
 				Dim col1,col2 As String
-				col1=Regex.Split("	",line)(0)
-				col2=Regex.Split("	",line)(1)
+				Try
+					col1=Regex.Split("	",line)(0)
+					col2=Regex.Split("	",line)(1)
+				Catch
+					Log(LastException)
+					continue
+				End Try
+
 				Dim isNonText As Boolean=False
 				Dim source As String
 				If col2="non-text" Then
