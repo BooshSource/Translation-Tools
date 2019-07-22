@@ -3,17 +3,24 @@ Build1=Default,b4j.example
 File1=export.bjl
 File2=import.bjl
 File3=main.bjl
+File4=OCR.bjl
 FileGroup1=Default Group
 FileGroup2=Default Group
 FileGroup3=Default Group
+FileGroup4=Default Group
 Group=Default Group
 Library1=jcore
 Library2=jfx
 Library3=jshell
 Library4=jpoi
-NumberOfFiles=3
-NumberOfLibraries=4
-NumberOfModules=0
+Library5=xui views
+Library6=jokhttputils2
+Library7=jstringutils
+Library8=json
+Module1=OCR
+NumberOfFiles=4
+NumberOfLibraries=8
+NumberOfModules=1
 Version=7.51
 @EndOfDesignText@
 #Region Project Attributes 
@@ -31,15 +38,41 @@ Sub Process_Globals
 	Private RefillLabel As Label
 	Private TabPane1 As TabPane
 	Private handleNontextCheckBox As CheckBox
+	Private ComboBox1 As ComboBox
+	Private EngineComboBox As ComboBox
+	Private XLSXLabel As Label
+	Private LayersListView As ListView
+	Private langmap As Map
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
 	MainForm = Form1
 	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
 	MainForm.Show
+
+	langmap.Initialize
+	Dim langlist As List
+	langlist=File.ReadList(File.DirApp,"lang.conf")
+	For i=0 To langlist.Size-1 Step 2
+		langmap.Put(langlist.Get(i),langlist.Get(i+1))
+	Next
+	initUI
+	OCR.checkTessearct
+End Sub
+
+Sub initUI
 	TabPane1.LoadLayout("export","导出文字")
+	TabPane1.LoadLayout("OCR","OCR验证")
 	TabPane1.LoadLayout("import","文字回填")
 	Label1.Text="先选择psd文件夹，再点导出"
+	For Each item As String In langmap.Keys
+		ComboBox1.Items.Add(item)
+	Next
+	ComboBox1.SelectedIndex=0
+	EngineComboBox.Items.Add("tesseract")
+	EngineComboBox.Items.Add("baidu")
+	EngineComboBox.Items.Add("baidu_network")
+	EngineComboBox.SelectedIndex=0
 End Sub
 
 'Return true to allow the default exceptions handler to handle the uncaught exception.
@@ -108,7 +141,7 @@ Sub merge(psdDir As String)
 					col2=Regex.Split("	",line)(1)
 				Catch
 					Log(LastException)
-					continue
+					Continue
 				End Try
 
 				Dim isNonText As Boolean=False
@@ -122,8 +155,8 @@ Sub merge(psdDir As String)
 				Dim shouldBeFiltered As Boolean=False
 				For Each filterWord As String In filterWords
 					Log(filterWord)
-					Log(source.Contains(filterWord))
-					If source.Contains(filterWord) Then
+					Log(source.StartsWith(filterWord))
+					If source.StartsWith(filterWord) Then
 						shouldBeFiltered=True
 						Exit
 					End If
@@ -146,7 +179,7 @@ Sub merge(psdDir As String)
 		End If
 	Next
 	wb.Save(psdDir,"out.xlsx")
-	openFolder
+	openFolder(currentPath)
 	Label1.Text="导出完成"
 End Sub
 
@@ -167,10 +200,10 @@ Sub ImportButton_MouseClicked (EventData As MouseEvent)
 	
 End Sub
 
-Sub openFolder
+Sub openFolder(path As String)
 	Select fx.Msgbox2(MainForm,"操作成功，是否打开目录？","","好","取消","",fx.MSGBOX_CONFIRMATION)
 		Case fx.DialogResponse.POSITIVE
-			fx.ShowExternalDocument(File.GetUri(currentPath,""))
+			fx.ShowExternalDocument(File.GetUri(path,""))
 	End Select
 End Sub
 
@@ -182,7 +215,7 @@ Sub refill(psdDir As String)
 	sh.Run(-1)
 	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
 	If Success Then
-		openFolder
+		openFolder(currentPath)
 	End If
 End Sub
 
@@ -207,7 +240,7 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 			sheet1=wb.GetSheet(0)
 			For Each row As PoiRow In sheet1.Rows
 				If row.RowNumber=0 Then
-					continue
+					Continue
 				End If
 				If row.GetCell(4).IsInitialized Then
 					If handleNontextCheckBox.Checked=False And row.GetCell(4).Value="non-text" Then
@@ -229,3 +262,75 @@ Sub ChooseImDirButton_MouseClicked (EventData As MouseEvent)
 	RefillLabel.Text=psdDir
 	currentPath=psdDir
 End Sub
+
+Sub OCRButton_MouseClicked (EventData As MouseEvent)
+	Log(XLSXLabel.Text)
+	Try
+		Dim wb As PoiWorkbook
+		wb.InitializeExisting(XLSXLabel.Text,"","")
+	Catch
+		Log(LastException)
+		Return
+	End Try
+
+	Dim sheet1 As PoiSheet
+	sheet1=wb.GetSheet(0)
+	For Each row As PoiRow In sheet1.Rows
+		If row.RowNumber=0 Then
+			row.CreateCellString(5,"OCR")
+			Continue
+		End If
+		If row.GetCell(4).IsInitialized Then
+			If row.GetCell(4).Value="non-text" Then
+				wait for (ExportJPG(row.GetCell(0).Value&".psd",row.GetCell(1).Value)) Complete (result As String)
+				Log("OCR:"& result)
+				If result.Trim<>"" Then
+					LayersListView.Items.Add(row.GetCell(1).Value)
+					row.CreateCellString(5,result) 
+				End If
+			Else
+				row.CreateCellString(5,row.GetCell(2).Value)
+			End If
+		Else
+			row.CreateCellString(5,row.GetCell(2).Value)
+		End If
+	Next
+	wb.Save(XLSXLabel.Text,"")
+	openFolder(File.GetFileParent(XLSXLabel.Text))
+End Sub
+
+Sub ExportJPG(filename As String,layername As String) As ResumableSub
+	Dim sh As Shell
+	sh.Initialize("sh","layer2img",Array(filename,layername))
+	sh.WorkingDirectory=File.GetFileParent(XLSXLabel.Text)
+	sh.Run(-1)
+	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	Log(Success)
+	Log(ExitCode)
+	If Success And ExitCode=0 Then
+		wait for (OCROneLayer) Complete (result As String)
+		Return result
+	Else
+		Return ""
+	End If
+End Sub
+
+Sub OCROneLayer As ResumableSub
+	Dim img As Image
+	img.Initialize(File.GetFileParent(XLSXLabel.Text),"out.jpg")
+	'wait for (OCR.baidu(img,"network","chi_sim")) complete (result As Map)
+	Dim lang As String=langmap.Get(ComboBox1.Items.Get(ComboBox1.SelectedIndex))
+	wait for (OCR.GetText(img,lang,EngineComboBox.Items.Get(EngineComboBox.SelectedIndex))) complete (result As String)
+	Return result
+End Sub
+
+Sub ChooseXLSX4OCRButton_MouseClicked (EventData As MouseEvent)
+	Dim fc As FileChooser
+	fc.Initialize
+	fc.SetExtensionFilter("XLSX files",Array As String("*.xlsx"))
+	Dim path As String=fc.ShowOpen(MainForm)
+	XLSXLabel.Text=path
+End Sub
+
+
+

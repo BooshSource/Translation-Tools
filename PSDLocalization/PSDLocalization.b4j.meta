@@ -1,6 +1,9 @@
 ﻿ModuleBookmarks0=
+ModuleBookmarks1=
 ModuleBreakpoints0=
+ModuleBreakpoints1=
 ModuleClosedNodes0=
-NavigationStack=Main,ChooseImDirButton_MouseClicked,189,1,Visual Designer,import.bjl,-100,3,Main,Process_Globals,10,0,Main,RefillButton_MouseClicked,165,1,Main,refill,151,1,Main,openFolder,145,0,Main,ImportButton_MouseClicked,139,0,Main,ChooseXLSXButton_MouseClicked,185,6,Main,AppStart,17,0,Main,merge,92,6
+ModuleClosedNodes1=
+NavigationStack=Main,ChooseXLSX4OCRButton_MouseClicked,292,3,Main,ImportButton_MouseClicked,175,0,Main,merge,156,1,Main,refill,192,0,Main,openFolder,182,3,Main,OCRButton_MouseClicked,259,6,OCR,GetText,13,1,OCR,baidu,89,0,Main,OCROneLayer,289,0,Main,ExportJPG,284,6
 SelectedBuild=0
-VisibleModules=
+VisibleModules=1
