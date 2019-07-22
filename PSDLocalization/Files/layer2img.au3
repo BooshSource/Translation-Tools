@@ -4,7 +4,7 @@ Dim $layerName
 
 if $cmdLine[0]<>2 Then
    $filename="1.psd"
-   $layerName="擦 拷贝 2"
+   $layerName="你住哪里呀， 一起回家吧！"
    Exit(1)
 Else
    $filename=$cmdLine[1]
@@ -48,11 +48,16 @@ Func handleArtLayers($ArtLayers)
 EndFunc
 
 Func SaveLayerToJPG($ArtLayer)
-    $ArtLayer.copy()
-	$newDoc = $app.documents.add()
-	$newDoc.paste()
-	SaveAs($newDoc)
-	$newDoc.close(2)
+   Dim $bounds[4]
+   $bounds = $ArtLayer.bounds
+   if $bounds[3] = 0 Then ;empty
+	  exit(1)
+   EndIf
+   $ArtLayer.copy()
+   $newDoc = $app.documents.add()
+   $newDoc.paste()
+   SaveAs($newDoc)
+   $newDoc.close(2)
  EndFunc
 
 
