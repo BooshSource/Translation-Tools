@@ -1,6 +1,21 @@
  #include <FileConstants.au3>
  #include <File.au3>
 
+Global $FontSize = 6
+Global $TextItemWidth = 50
+Global $TextItemHeight = 50
+
+if FileExists(@WorkingDir&"\config.ini")=0 Then
+   IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", "6")
+   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemWidth", "50")
+   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemHeight", "50")
+Else
+   $FontSize = IniRead (@WorkingDir&"\config.ini", "General", "FontSize", 6 )
+   $TextItemWidth = IniRead (@WorkingDir&"\config.ini", "General", "TextItemWidth", 50 )
+   $TextItemHeight = IniRead (@WorkingDir&"\config.ini", "General", "TextItemHeight", 50 )
+Endif
+
+
 Local $oDictionary
 $oDictionary = ObjCreate("Scripting.Dictionary")
 
@@ -107,8 +122,12 @@ Func handleArtLayers($ArtLayers)
 			   $ArtLayer.clear()
 			   $ArtLayer.Kind = 2
 			   $ArtLayer.textItem.Position=$position
+			   $ArtLayer.textItem.Kind=2 ;paragraph
+			   $ArtLayer.textItem.Width=int($TextItemWidth)
+               $ArtLayer.textItem.Height=int($TextItemHeight)
+			Else
+			   $ArtLayer.textItem.Kind=2 ;paragraph
 			EndIf
-			$ArtLayer.textItem.Kind=2 ;paragraph
 			$ArtLayer.textItem.Contents = $oDictionary.Item($layerName)
 			if $font="" Then
 			   $ArtLayer.textItem.Font= "NotoSansHans-Regular"
