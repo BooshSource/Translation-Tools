@@ -43,6 +43,7 @@ Sub Process_Globals
 	Private XLSXLabel As Label
 	Private LayersListView As ListView
 	Private langmap As Map
+	Private FontLabel As Label
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
@@ -332,5 +333,20 @@ Sub ChooseXLSX4OCRButton_MouseClicked (EventData As MouseEvent)
 	XLSXLabel.Text=path
 End Sub
 
+Sub ChooseFontButton_MouseClicked (EventData As MouseEvent)
+	fx.Msgbox(MainForm,"请打开PS，新建一个图像并新建一个文本框。程序会读取该文本框内文本的字体，并在漫画目录生成font.txt这一文件存储字体信息。","")
+	Try
+		Dim sh As Shell
+		sh.Initialize("sh","readFont",Null)
+		sh.WorkingDirectory=currentPath
+		sh.Run(-1)
+		wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+		Log(Success)
+		Log(ExitCode)
+		FontLabel.Text=File.ReadString(currentPath,"font.txt")
+	Catch
+		Log(LastException)
+	End Try
 
+End Sub
 

@@ -4,15 +4,18 @@
 Global $FontSize = 6
 Global $TextItemWidth = 50
 Global $TextItemHeight = 50
+Global $Language = 1
 
 if FileExists(@WorkingDir&"\config.ini")=0 Then
    IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", "6")
    IniWrite(@WorkingDir&"\config.ini", "General", "TextItemWidth", "50")
    IniWrite(@WorkingDir&"\config.ini", "General", "TextItemHeight", "50")
+   IniWrite(@WorkingDir&"\config.ini", "General", "Language", "1")
 Else
    $FontSize = IniRead (@WorkingDir&"\config.ini", "General", "FontSize", 6 )
    $TextItemWidth = IniRead (@WorkingDir&"\config.ini", "General", "TextItemWidth", 50 )
    $TextItemHeight = IniRead (@WorkingDir&"\config.ini", "General", "TextItemHeight", 50 )
+   $Language = IniRead (@WorkingDir&"\config.ini", "General", "Language", 1 )
 Endif
 
 
@@ -136,6 +139,8 @@ Func handleArtLayers($ArtLayers)
 			EndIf
 			$ArtLayer.textItem.Justification=2 ;center
 			$ArtLayer.textItem.Capitalization=2 ;capcase
+			$ArtLayer.textItem.Language= int($Language)
+			$ArtLayer.textItem.Hyphenation= True
 		 EndIf
 	  Else
 		 ConsoleWrite("not exists"  & @CRLF)
