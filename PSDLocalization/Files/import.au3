@@ -128,6 +128,7 @@ Func handleArtLayers($ArtLayers)
 			   $ArtLayer.textItem.Kind=2 ;paragraph
 			   $ArtLayer.textItem.Width=int($TextItemWidth)
                $ArtLayer.textItem.Height=int($TextItemHeight)
+			   $ArtLayer.textItem.Size=int($FontSize)
 			Else
 			   $ArtLayer.textItem.Kind=2 ;paragraph
 			EndIf
@@ -140,7 +141,9 @@ Func handleArtLayers($ArtLayers)
 			$ArtLayer.textItem.Justification=2 ;center
 			$ArtLayer.textItem.Capitalization=2 ;capcase
 			$ArtLayer.textItem.Language= int($Language)
-			$ArtLayer.textItem.Hyphenation= True
+			$ArtLayer.textItem.Hyphenation = True
+			$ArtLayer.textItem.UseAutoLeading = False
+			$ArtLayer.textItem.Leading=int($ArtLayer.textItem.Size)
 		 EndIf
 	  Else
 		 ConsoleWrite("not exists"  & @CRLF)
