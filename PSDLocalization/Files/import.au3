@@ -122,13 +122,18 @@ Func handleArtLayers($ArtLayers)
 		 ConsoleWrite("exists"  & @CRLF)
 		 if $oDictionary.Item($layerName)<>$layerName Then
 			if $ArtLayer.Kind=1  Then
+			   ;$duplicate=$ArtLayer.duplicate()
+			   ;$duplicate.Visible=False
 			   $ArtLayer.clear()
 			   $ArtLayer.Kind = 2
-			   $ArtLayer.textItem.Position=$position
+			   ConsoleWrite($position[0] & @CRLF)
+			   ConsoleWrite($position[1] & @CRLF)
+
 			   $ArtLayer.textItem.Kind=2 ;paragraph
-			   $ArtLayer.textItem.Width=int($TextItemWidth)
-               $ArtLayer.textItem.Height=int($TextItemHeight)
-			   $ArtLayer.textItem.Size=int($FontSize)
+			   $ArtLayer.textItem.Width=Ceiling($TextItemWidth)
+               $ArtLayer.textItem.Height=Ceiling($TextItemHeight)
+			   $ArtLayer.textItem.Size=Ceiling($FontSize)
+			   $ArtLayer.textItem.Position=$position
 			Else
 			   $ArtLayer.textItem.Kind=2 ;paragraph
 			EndIf
@@ -143,7 +148,7 @@ Func handleArtLayers($ArtLayers)
 			$ArtLayer.textItem.Language= int($Language)
 			$ArtLayer.textItem.Hyphenation = True
 			$ArtLayer.textItem.UseAutoLeading = False
-			$ArtLayer.textItem.Leading=int($ArtLayer.textItem.Size)
+			$ArtLayer.textItem.Leading=Ceiling($ArtLayer.textItem.Size)
 		 EndIf
 	  Else
 		 ConsoleWrite("not exists"  & @CRLF)
