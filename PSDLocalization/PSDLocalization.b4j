@@ -181,7 +181,15 @@ Sub merge(psdDir As String)
 			Next
 		End If
 	Next
-	wb.Save(psdDir,"out.xlsx")
+	Try
+		wb.Save(psdDir,"out.xlsx")
+	Catch
+		Log(LastException)
+		Dim filename As String= DateTime.Now&".xlsx"
+		wb.Save(psdDir,filename)
+		fx.Msgbox(MainForm,"out.xlsx文件已打开，文件保存为"&filename,"")
+	End Try
+
 	openFolder(currentPath)
 	Label1.Text="导出完成"
 End Sub
@@ -237,8 +245,14 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 		fc.SetExtensionFilter("XLSX files",Array As String("*.xlsx"))
 		Dim path As String=fc.ShowOpen(MainForm)
 		If File.Exists(path,"") Then
-			Dim wb As PoiWorkbook
-			wb.InitializeExisting(path,"","")
+			Try
+				Dim wb As PoiWorkbook
+				wb.InitializeExisting(path,"","")
+			Catch
+				Log(LastException)
+				fx.Msgbox(MainForm,"请先关闭xlsx文件","")
+				Return
+			End Try
 			Dim sheet1 As PoiSheet
 			sheet1=wb.GetSheet(0)
 			For Each row As PoiRow In sheet1.Rows
@@ -273,6 +287,7 @@ Sub OCRButton_MouseClicked (EventData As MouseEvent)
 		wb.InitializeExisting(XLSXLabel.Text,"","")
 	Catch
 		Log(LastException)
+		fx.Msgbox(MainForm,"请先关闭xlsx文件","")
 		Return
 	End Try
 
@@ -336,7 +351,7 @@ Sub ChooseXLSX4OCRButton_MouseClicked (EventData As MouseEvent)
 End Sub
 
 Sub ChooseFontButton_MouseClicked (EventData As MouseEvent)
-	fx.Msgbox(MainForm,"请打开PS，新建一个图像并新建一个文本框。程序会读取该文本框内文本的字体，并在漫画目录生成font.txt这一文件存储字体信息。","")
+	fx.Msgbox(MainForm,"请打开PS，新建一个图像并新建一个文本框。程序会读取该文本框内文本的字体，并在漫画目录生成font.txt这一文件存储字体信息。完成后再点确认。","")
 	Try
 		Dim sh As Shell
 		sh.Initialize("sh","readFont",Null)
