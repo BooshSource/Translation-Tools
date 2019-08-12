@@ -4,6 +4,6 @@ ModuleBreakpoints0=
 ModuleBreakpoints1=
 ModuleClosedNodes0=
 ModuleClosedNodes1=
-NavigationStack=OCR,youdao,280,0,OCR,checkTessearct,10,0,OCR,Process_Globals,6,2,Main,AppStart,34,0,Main,initUI,48,0,Main,export,83,0,Main,merge,104,0,Main,Process_Globals,18,0,OCR,GetText,28,0,OCR,tesseract,62,0
+NavigationStack=OCR,youdao,280,0,OCR,checkTessearct,10,0,OCR,Process_Globals,6,2,Main,AppStart,34,0,Main,initUI,48,0,Main,export,83,0,Main,merge,104,0,Main,Process_Globals,18,0,OCR,GetText,28,0,OCR,tesseract,60,1,OCR,isTesseractInstalled,79,0
 SelectedBuild=0
 VisibleModules=1

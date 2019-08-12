@@ -66,7 +66,7 @@ Sub tesseract(img As B4XBitmap,lang As String) As ResumableSub
 	sh1.WorkingDirectory = File.DirApp
 	sh1.run(100000)
 	wait for sh1_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
-	If Success Then
+	If Success And ExitCode=0 Then
 		Log("Success")
 		Log(StdOut)
 		Dim text As String=File.ReadString(File.DirApp,"output.txt")
@@ -83,7 +83,7 @@ Sub isTesseractInstalled As ResumableSub
 	sh.Initialize("sh","tesseract",Null)
 	sh.run(10000)
 	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
-	If Success And ExitCode = 0 Then
+	If Success Then
 		Log("Success")
 		Log(StdOut)
 		result=True
