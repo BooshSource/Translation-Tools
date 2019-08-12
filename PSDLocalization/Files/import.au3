@@ -6,8 +6,12 @@ Global $TextItemWidth = 50
 Global $TextItemHeight = 50
 Global $Language = 1
 
+if $cmdLine[0]=1 Then
+    $FontSize = $cmdLine[1]
+endif
+
 if FileExists(@WorkingDir&"\config.ini")=0 Then
-   IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", "6")
+   IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", $FontSize)
    IniWrite(@WorkingDir&"\config.ini", "General", "TextItemWidth", "50")
    IniWrite(@WorkingDir&"\config.ini", "General", "TextItemHeight", "50")
    IniWrite(@WorkingDir&"\config.ini", "General", "Language", "1")

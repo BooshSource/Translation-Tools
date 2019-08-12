@@ -4,6 +4,6 @@ ModuleBreakpoints0=
 ModuleBreakpoints1=
 ModuleClosedNodes0=
 ModuleClosedNodes1=
-NavigationStack=Main,initUI,45,0,Main,ChooseFontButton_MouseClicked,319,1,OCR,checkTessearct,9,0,OCR,Process_Globals,6,0,OCR,tesseract,54,1,OCR,saveImgToDisk,90,0,Main,RefillButton_MouseClicked,201,0,Main,ChooseXLSXButton_MouseClicked,217,6,Main,OCRButton_MouseClicked,250,0,Main,merge,164,6
+NavigationStack=Main,merge,117,6,Visual Designer,import.bjl,-100,6,Main,Process_Globals,22,0,Main,initUI,48,0,Main,ChooseXLSXButton_MouseClicked,239,6,Main,RefillButton_MouseClicked,207,0,Main,openFolder,192,0,Main,refill,198,6
 SelectedBuild=0
 VisibleModules=1

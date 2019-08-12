@@ -46,6 +46,7 @@ Sub Process_Globals
 	Private LayersListView As ListView
 	Private langmap As Map
 	Private FontLabel As Label
+	Private FontSizeSpinner As Spinner
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
@@ -220,8 +221,9 @@ End Sub
 
 Sub refill(psdDir As String)
 	RefillLabel.Text="导入中。。。"
+	Dim fontsize As String=FontSizeSpinner.Value
 	Dim sh As Shell
-	sh.Initialize("sh",File.Combine(File.DirApp,"import.exe"),Null)
+	sh.Initialize("sh",File.Combine(File.DirApp,"import.exe"),Array(fontsize))
 	sh.WorkingDirectory=psdDir
 	sh.Run(-1)
 	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
@@ -256,15 +258,23 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 			Dim sheet1 As PoiSheet
 			sheet1=wb.GetSheet(0)
 			For Each row As PoiRow In sheet1.Rows
-				If row.RowNumber=0 Then
-					Continue
-				End If
-				If row.GetCell(4).IsInitialized Then
-					If handleNontextCheckBox.Checked=False And row.GetCell(4).Value="non-text" Then
+				Try
+					If row.RowNumber=0 Then
 						Continue
 					End If
-				End If
-				sb.Append(row.GetCell(1).Value).Append("	").Append(row.GetCell(3).Value).Append(CRLF)
+					Dim layername,target,note As String
+					layername=row.GetCell(1).Value
+					target=row.GetCell(3).Value
+					note=row.GetCell(4).Value
+					If row.GetCell(4).IsInitialized Then
+						If handleNontextCheckBox.Checked=False And note="non-text" Then
+							Continue
+						End If
+					End If
+					sb.Append(layername).Append("	").Append(target).Append(CRLF)
+				Catch
+					Log(LastException)
+				End Try
 			Next
 		End If
 		File.WriteString(currentPath,"翻译记忆.txt",sb.ToString)
