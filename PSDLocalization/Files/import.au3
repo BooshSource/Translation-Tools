@@ -6,15 +6,17 @@ Global $TextItemWidth = 50
 Global $TextItemHeight = 50
 Global $Language = 1
 
-if $cmdLine[0]=1 Then
+if $cmdLine[0]=3 Then
     $FontSize = $cmdLine[1]
+	$TextItemWidth = $cmdLine[2]
+	$TextItemHeight = $cmdLine[3]
 endif
 
 if FileExists(@WorkingDir&"\config.ini")=0 Then
    IniWrite(@WorkingDir&"\config.ini", "General", "FontSize", $FontSize)
-   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemWidth", "50")
-   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemHeight", "50")
-   IniWrite(@WorkingDir&"\config.ini", "General", "Language", "1")
+   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemWidth", $TextItemWidth)
+   IniWrite(@WorkingDir&"\config.ini", "General", "TextItemHeight", $TextItemHeight)
+   IniWrite(@WorkingDir&"\config.ini", "General", "Language", $Language)
 Else
    $FontSize = IniRead (@WorkingDir&"\config.ini", "General", "FontSize", 6 )
    $TextItemWidth = IniRead (@WorkingDir&"\config.ini", "General", "TextItemWidth", 50 )
@@ -124,7 +126,8 @@ Func handleArtLayers($ArtLayers)
 	  ConsoleWrite($layerName)
 	  if $oDictionary.Exists($layerName) Then
 		 ConsoleWrite("exists"  & @CRLF)
-		 if $oDictionary.Item($layerName)<>$layerName Then
+		 $target=$oDictionary.Item($layerName)
+		 if $target<>$layerName Then
 			if $ArtLayer.Kind=1  Then
 			   ;$duplicate=$ArtLayer.duplicate()
 			   ;$duplicate.Visible=False
@@ -138,10 +141,11 @@ Func handleArtLayers($ArtLayers)
                $ArtLayer.textItem.Height=Ceiling($TextItemHeight)
 			   $ArtLayer.textItem.Size=Ceiling($FontSize)
 			   $ArtLayer.textItem.Position=$position
+			   $ArtLayer.name=$target
 			Else
 			   $ArtLayer.textItem.Kind=2 ;paragraph
 			EndIf
-			$ArtLayer.textItem.Contents = $oDictionary.Item($layerName)
+			$ArtLayer.textItem.Contents = $target
 			if $font="" Then
 			   $ArtLayer.textItem.Font= "NotoSansHans-Regular"
 			Else

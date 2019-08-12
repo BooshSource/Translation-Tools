@@ -47,6 +47,8 @@ Sub Process_Globals
 	Private langmap As Map
 	Private FontLabel As Label
 	Private FontSizeSpinner As Spinner
+	Private HeightSpinner As Spinner
+	Private WidthSpinner As Spinner
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
@@ -222,8 +224,10 @@ End Sub
 Sub refill(psdDir As String)
 	RefillLabel.Text="导入中。。。"
 	Dim fontsize As String=FontSizeSpinner.Value
+	Dim textWidth As String=WidthSpinner.Value
+	Dim textHeight As String=HeightSpinner.Value
 	Dim sh As Shell
-	sh.Initialize("sh",File.Combine(File.DirApp,"import.exe"),Array(fontsize))
+	sh.Initialize("sh",File.Combine(File.DirApp,"import.exe"),Array As String(fontsize,textWidth,textHeight))
 	sh.WorkingDirectory=psdDir
 	sh.Run(-1)
 	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
@@ -265,8 +269,9 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 					Dim layername,target,note As String
 					layername=row.GetCell(1).Value
 					target=row.GetCell(3).Value
-					note=row.GetCell(4).Value
+					target=target.Replace(CRLF," ")
 					If row.GetCell(4).IsInitialized Then
+						note=row.GetCell(4).Value
 						If handleNontextCheckBox.Checked=False And note="non-text" Then
 							Continue
 						End If
