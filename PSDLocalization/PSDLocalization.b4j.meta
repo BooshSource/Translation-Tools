@@ -4,6 +4,6 @@ ModuleBreakpoints0=
 ModuleBreakpoints1=
 ModuleClosedNodes0=
 ModuleClosedNodes1=
-NavigationStack=Main,merge,117,6,Visual Designer,import.bjl,-100,6,Main,Process_Globals,22,0,Main,initUI,48,0,Main,ChooseXLSXButton_MouseClicked,239,6,Main,RefillButton_MouseClicked,207,0,Main,openFolder,192,0,Main,refill,198,6
+NavigationStack=Main,ChooseXLSXButton_MouseClicked,239,6,Main,openFolder,192,0,Main,refill,198,6,Main,RefillButton_MouseClicked,210,0,Main,export,77,0,Main,ChooseFontButton_MouseClicked,351,0,Main,getRes,368,6,Main,ChooseButton_MouseClicked,67,0,Main,getFontsize,374,6,Main,ChooseImDirButton_MouseClicked,261,6
 SelectedBuild=0
 VisibleModules=1

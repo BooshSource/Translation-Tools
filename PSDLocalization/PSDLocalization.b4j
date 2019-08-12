@@ -286,8 +286,13 @@ Sub ChooseImDirButton_MouseClicked (EventData As MouseEvent)
 	Dim dc As DirectoryChooser
 	dc.Initialize
 	Dim psdDir As String=dc.Show(MainForm)
-	RefillLabel.Text=psdDir
-	currentPath=psdDir
+	If File.Exists(psdDir,"") Then
+		RefillLabel.Text=psdDir
+		currentPath=psdDir
+		wait for (getFontsize(psdDir)) complete (size As Int)
+		FontSizeSpinner.Value=size
+	End If
+
 End Sub
 
 Sub OCRButton_MouseClicked (EventData As MouseEvent)
@@ -375,5 +380,37 @@ Sub ChooseFontButton_MouseClicked (EventData As MouseEvent)
 		Log(LastException)
 	End Try
 
+End Sub
+
+Sub getRes(psdDir As String,filename As String) As ResumableSub
+	Dim resolution As Int=72
+	Dim sh As Shell
+	sh.Initialize("sh",File.Combine(File.DirApp,"readRes.exe"),Array As String(filename))
+	sh.WorkingDirectory=psdDir
+	sh.Run(-1)
+	wait for sh_ProcessCompleted (Success As Boolean, ExitCode As Int, StdOut As String, StdErr As String)
+	If Success Then
+		If File.Exists(psdDir,"res.txt") Then
+			Try
+				resolution=File.ReadString(psdDir,"res.txt")
+			Catch
+				Log(LastException)
+			End Try
+
+		End If
+	End If
+	Return resolution
+End Sub
+
+Sub getFontsize(psdDir As String) As ResumableSub
+	Dim psdName As String
+	For Each filename As String In File.ListFiles(psdDir)
+		If filename.ToLowerCase.EndsWith(".psd") Then
+			psdName=filename
+		End If
+	Next
+	wait for (getRes(psdDir,psdName)) Complete (resolution As Int)
+	Dim suitableFontSize As Int = 48/(resolution/72)
+	Return suitableFontSize
 End Sub
 
