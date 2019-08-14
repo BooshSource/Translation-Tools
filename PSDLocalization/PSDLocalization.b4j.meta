@@ -1,9 +1,12 @@
 ﻿ModuleBookmarks0=
 ModuleBookmarks1=
+ModuleBookmarks2=
 ModuleBreakpoints0=
 ModuleBreakpoints1=
+ModuleBreakpoints2=
 ModuleClosedNodes0=
 ModuleClosedNodes1=
-NavigationStack=Visual Designer,import.bjl,-100,1,Main,Process_Globals,18,0,Main,export,82,0,Main,getRes,364,6,Main,ChooseFontButton_MouseClicked,348,0,Main,ExportJPG,313,0,Main,refill,204,6,Main,openFolder,192,0,Main,RefillButton_MouseClicked,212,0,Main,ChooseXLSXButton_MouseClicked,249,6
+ModuleClosedNodes2=
+NavigationStack=Main,exportFilesToTxt,110,5,Main,AppStart,30,0,Utils,GetFilenameWithoutExtension,38,0,Utils,replaceToEnglishPunctuation,36,0,Main,importDir,91,0,Main,findPSD,475,3,Main,ChooseImDirButton_MouseClicked,333,0,Main,getFontsize,450,3,Main,getRes,430,0,Main,ChooseXLSXButton_MouseClicked,277,6
 SelectedBuild=0
-VisibleModules=1
+VisibleModules=1,2

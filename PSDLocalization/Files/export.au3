@@ -1,32 +1,32 @@
 #include <FileConstants.au3>
 #include <File.au3>
 
-Local $aFileList = _FileListToArray(@WorkingDir, "*.psd", $FLTA_FILES, True)
-If @error = 1 Then
-   MsgBox($MB_SYSTEMMODAL, "", "Path was invalid.")
-   Exit
-EndIf
-If @error = 4 Then
-   MsgBox($MB_SYSTEMMODAL, "", "No file(s) were found.")
-   Exit
+Local $hFileOpen = FileOpen(@WorkingDir&"\out.txt", $FO_READ)
+If $hFileOpen = -1 Then
+   MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file(out.txt does not exist).")
+   Return False
 EndIf
 
 Dim $text=""
 Dim $textForNonTextItem=""
-For $i=1 to $aFileList[0]
-   $psdName=$aFileList[$i]
+Dim $res
+
+While True
+   $psdName=FileReadLine($hFileOpen)
+   if @error Then ExitLoop
+   ConsoleWrite($psdName & @CRLF)
    $fileName=StringReplace($psdName,".psd","",-1, $STR_NOCASESENSE)
-   ConsoleWrite("filename"&$fileName)
+   ConsoleWrite("filename: " & $fileName & @CRLF)
    $text=""
    $textForNonTextItem=""
    Export($fileName)
-Next
+WEnd
 
 Func Export($fileName)
    $app = ObjCreate("Photoshop.Application")
-   $doc=$app.open($fileName&".psd")
-
-   Local $hFileOpen = FileOpen($fileName&".txt", $FO_OVERWRITE)
+   $doc = $app.open(@WorkingDir & "\" & $fileName&".psd")
+   $res = $doc.Resolution
+   Local $hFileOpen = FileOpen(@WorkingDir & "\" & $fileName&".txt", $FO_OVERWRITE)
    If $hFileOpen = -1 Then
 	  MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file.")
 	  Return False
@@ -62,16 +62,27 @@ Func handleArtLayers($ArtLayers)
 	  $artLayer=$ArtLayers.Item($i)
 	  ;$content=StringReplace($content," ","")
 	  ConsoleWrite($artLayer.name & @CRLF)
+	  Dim $bounds[4]
+	  $bounds=$ArtLayer.Bounds
+	  Dim $X,$Y,$width,$height
+	  $X=$bounds[0]
+	  $Y=$bounds[1]
+	  $width=$bounds[2]
+	  $height=$bounds[3]
 	  if $artLayer.Kind=2 Then
 		 $content=$artLayer.textItem.Contents
 		 $content=StringRegExpReplace($content,"\r\n"," ")
 		 $content=StringRegExpReplace($content,"\r"," ")
 	     $content=StringRegExpReplace($content,"\n"," ")
+		 Dim $scale
+		 $scale=$res/72
+         $width=$artLayer.textItem.Width*$scale*$scale
+		 $height=$artLayer.textItem.Height*$scale*$scale
 		;ConsoleWrite("name:" & $artLayer.name & @CRLF)
-		 $text=$text & $artLayer.name & @TAB & $content & @CRLF
+		 $text=$text & $X & @TAB & $Y  & @TAB & $width & @TAB & $height & @TAB & $artLayer.name & @TAB & $content & @CRLF
 	  Else
 	;	 $textForNonTextItem=$textForNonTextItem & $content & @CRLF
-		 $text=$text & $artLayer.name & @TAB & "non-text" & @CRLF
+		 $text=$text & $X & @TAB & $Y  & @TAB & $width & @TAB & $height & @TAB & $artLayer.name & @TAB & "non-text" & @CRLF
 	  EndIf
    Next
 EndFunc

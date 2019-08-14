@@ -28,24 +28,19 @@ Endif
 Local $oDictionary
 $oDictionary = ObjCreate("Scripting.Dictionary")
 
-Local $fsFileOpen = FileOpen("font.txt", $FO_READ)
+Local $fsFileOpen = FileOpen(@WorkingDir&"\font.txt", $FO_READ)
 Local $font = ""
 If $fsFileOpen <> -1 Then
    $font=FileRead($fsFileOpen)
 EndIf
 
-Local $aFileList = _FileListToArray(@WorkingDir, "*.psd", $FLTA_FILES, True)
-If @error = 1 Then
-   MsgBox($MB_SYSTEMMODAL, "", "Path was invalid.")
-   Exit
-EndIf
-If @error = 4 Then
-   MsgBox($MB_SYSTEMMODAL, "", "No file(s) were found.")
-   Exit
+Local $aFileOpen = FileOpen(@WorkingDir&"\out.txt", $FO_READ)
+If $aFileOpen = -1 Then
+   MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file(out.txt does not exist).")
+   Return False
 EndIf
 
-
-Local $hFileOpen = FileOpen("翻译记忆.txt", $FO_READ)
+Local $hFileOpen = FileOpen(@WorkingDir&"\翻译记忆.txt", $FO_READ)
 If $hFileOpen = -1 Then
    MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file.")
    Return False
@@ -70,23 +65,15 @@ WEnd
 
 FileClose($hFileOpen)
 
+While True
+   $psdName=FileReadLine($aFileOpen)
+   if @error Then ExitLoop
+   Import($psdName)
+WEnd
 
- For $i=1 to $aFileList[0]
-    $psdName=$aFileList[$i]
-    $fileName=StringReplace($psdName,".psd","",-1, $STR_NOCASESENSE)
-    ConsoleWrite("filename"&$fileName)
-    ;$txtName=$fileName&".txt"
-    ;if FileExists($txtName) Then
-    ;    ConsoleWrite($txtName)
-        Import($fileName)
-    ;EndIf
- Next
-
-
-
- Func Import($fileName)
+ Func Import($psdName)
    $app = ObjCreate("Photoshop.Application")
-   $doc = $app.open($fileName&".psd")
+   $doc = $app.open(@WorkingDir & "\" & $psdName)
 
 
    $LayerSets=$doc.LayerSets

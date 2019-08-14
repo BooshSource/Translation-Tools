@@ -11,6 +11,7 @@ FileGroup4=Default Group
 Group=Default Group
 Library1=jcore
 Library10=encryption
+Library11=b4xcollections
 Library2=jfx
 Library3=jshell
 Library4=jpoi
@@ -20,9 +21,10 @@ Library7=jstringutils
 Library8=json
 Library9=byteconverter
 Module1=OCR
+Module2=Utils
 NumberOfFiles=4
-NumberOfLibraries=10
-NumberOfModules=1
+NumberOfLibraries=11
+NumberOfModules=2
 Version=7.51
 @EndOfDesignText@
 #Region Project Attributes 
@@ -49,6 +51,7 @@ Sub Process_Globals
 	Private FontSizeSpinner As Spinner
 	Private HeightSpinner As Spinner
 	Private WidthSpinner As Spinner
+	Private ImagesListView As ListView
 End Sub
 
 Sub AppStart (Form1 As Form, Args() As String)
@@ -95,15 +98,57 @@ Sub ExportButton_MouseClicked (EventData As MouseEvent)
 End Sub
 
 Sub ChooseButton_MouseClicked (EventData As MouseEvent)
+	ImagesListView.Items.Clear
 	Dim dc As DirectoryChooser
 	dc.Initialize
 	Dim psdDir As String=dc.Show(MainForm)
-    Label1.Text=psdDir
-	currentPath=psdDir
+	Dim imgMap As Map
+	imgMap.Initialize
+	If File.Exists(psdDir,"") Then
+		Label1.Text=psdDir
+		currentPath=psdDir
+		importDir(psdDir,imgMap)
+		Dim keys As List
+		keys.Initialize
+		For Each key As String In imgMap.Keys
+			keys.Add(key)
+		Next
+		ImagesListView.Items.AddAll(Utils.sortedList(keys))
+	End If
+	
+End Sub
+
+Sub importDir(dirPath As String,imgMap As Map)
+	Dim files As List=File.ListFiles(dirPath)
+	For Each filename As String In files
+		If ImagesListView.Items.IndexOf(filename)<>-1 Then
+			Continue
+		End If
+		If File.IsDirectory(dirPath,filename) Then
+			importDir(File.Combine(dirPath,filename),imgMap)
+		End If
+		Dim lowerCaseName As String=filename.ToLowerCase
+		If lowerCaseName.EndsWith(".psd") Then
+			If currentPath<>dirPath Then
+				filename=File.Combine(dirPath.Replace(currentPath,""),filename)
+			End If
+			imgMap.Put(filename,"")
+		End If
+	Next
+End Sub
+
+Sub exportFilesToTxt(path As String,files As List)
+	Dim sb As StringBuilder
+	sb.Initialize
+	For Each filename As String In files
+		sb.Append(filename).Append(CRLF)
+	Next
+	File.WriteString(path,"",sb.ToString)
 End Sub
 
 Sub export(psdDir As String)
 	Label1.Text="导出中。。。"
+	exportFilesToTxt(File.Combine(currentPath,"out.txt"),ImagesListView.Items)
 	Dim sh As Shell
 	sh.Initialize("sh",File.Combine(File.DirApp,"export.exe"),Null)
 	sh.WorkingDirectory=psdDir
@@ -133,18 +178,31 @@ Sub merge(psdDir As String)
 	row.CreateCellString(2,"source")
 	row.CreateCellString(3,"target")
 	row.CreateCellString(4,"note")
-	
-	Dim fileList As List=File.ListFiles(psdDir)
-	fileList.Sort(True)
-	For Each filename As String In fileList
-		If filename.EndsWith(".txt") Then
-			Dim lines As List = File.ReadList(psdDir,filename)
+	row.CreateCellString(5,"OCR")
+	row.CreateCellString(6,"X")
+	row.CreateCellString(7,"Y")
+	row.CreateCellString(8,"width")
+	row.CreateCellString(9,"height")
+
+	For Each filename As String In ImagesListView.Items
+		Dim fullPathWithoutExtension As String = File.Combine(currentPath,Utils.GetFilenameWithoutExtension(filename))
+        Log(fullPathWithoutExtension)
+		Dim txtName As String= fullPathWithoutExtension&".txt"
+		If File.Exists(txtName,"") Then
+			Dim lines As List = File.ReadList(txtName,"")
 			For Each line As String In lines
 				Log(line)
-				Dim col1,col2 As String
+				Dim items As List
+				items.Initialize
+				items.AddAll(Regex.Split("	",line))
 				Try
-					col1=Regex.Split("	",line)(0)
-					col2=Regex.Split("	",line)(1)
+					Dim X,Y,Width,Height,layername,note As String
+					X=items.Get(0)
+					Y=items.Get(1)
+					Width=items.Get(2)
+					Height=items.Get(3)
+					layername=items.Get(4)
+					note=items.Get(5) ' note or contents
 				Catch
 					Log(LastException)
 					Continue
@@ -152,11 +210,11 @@ Sub merge(psdDir As String)
 
 				Dim isNonText As Boolean=False
 				Dim source As String
-				If col2="non-text" Then
+				If note="non-text" Then
 					isNonText=True
-					source=col1
+					source=layername
 				Else
-					source=col2
+					source=note
 				End If
 				Dim shouldBeFiltered As Boolean=False
 				For Each filterWord As String In filterWords
@@ -169,8 +227,8 @@ Sub merge(psdDir As String)
 				Next
 				If shouldBeFiltered=False Then
 					Dim row As PoiRow = sheet1.CreateRow(index)
-					row.CreateCellString(0,File.GetName(filename).Replace(".txt",""))
-					row.CreateCellString(1,col1)
+					row.CreateCellString(0,filename)
+					row.CreateCellString(1,layername)
 					
 					If CheckBox1.Checked Then
 						source=source.Replace(" ","")
@@ -179,6 +237,10 @@ Sub merge(psdDir As String)
 					If isNonText Then
 						row.CreateCellString(4,"non-text")
 					End If
+					row.CreateCellString(6,X)
+					row.CreateCellString(7,Y)
+					row.CreateCellString(8,Width)
+					row.CreateCellString(9,Height)
 					index=index+1
 				End If
 			Next
@@ -244,6 +306,8 @@ End Sub
 
 Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 	If File.Exists(currentPath,"") Then
+		Dim filenames As B4XSet
+		filenames.Initialize
 		Dim sb As StringBuilder
 		sb.Initialize
 		Dim fc As FileChooser
@@ -266,7 +330,9 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 					If row.RowNumber=0 Then
 						Continue
 					End If
-					Dim layername,target,note As String
+					Dim filename,layername,target,note As String
+					filename=row.GetCell(0).Value
+					filenames.Add(filename)
 					layername=row.GetCell(1).Value
 					target=row.GetCell(3).Value
 					target=target.Replace(CRLF," ")
@@ -282,8 +348,11 @@ Sub ChooseXLSXButton_MouseClicked (EventData As MouseEvent)
 				End Try
 			Next
 		End If
+		exportFilesToTxt(File.Combine(currentPath,"out.txt"),filenames.AsList)
 		File.WriteString(currentPath,"翻译记忆.txt",sb.ToString)
 		RefillLabel.Text="xlsx处理成功"
+		wait for (getFontsize(currentPath,filenames.AsList.Get(0))) complete (size As Int)
+		FontSizeSpinner.Value=size
 	End If
 End Sub
 
@@ -294,8 +363,6 @@ Sub ChooseImDirButton_MouseClicked (EventData As MouseEvent)
 	If File.Exists(psdDir,"") Then
 		RefillLabel.Text=psdDir
 		currentPath=psdDir
-		wait for (getFontsize(psdDir)) complete (size As Int)
-		FontSizeSpinner.Value=size
 	End If
 
 End Sub
@@ -320,7 +387,7 @@ Sub OCRButton_MouseClicked (EventData As MouseEvent)
 		End If
 		If row.GetCell(4).IsInitialized Then
 			If row.GetCell(4).Value="non-text" Then
-				wait for (ExportJPG(row.GetCell(0).Value&".psd",row.GetCell(1).Value)) Complete (result As String)
+				wait for (ExportJPG(row.GetCell(0).Value,row.GetCell(1).Value)) Complete (result As String)
 				Log("OCR:"& result)
 				If result.Trim<>"" Then
 					LayersListView.Items.Add(row.GetCell(1).Value)
@@ -339,6 +406,8 @@ End Sub
 
 Sub ExportJPG(filename As String,layername As String) As ResumableSub
 	Dim sh As Shell
+	Log(filename)
+	Log(File.GetFileParent(XLSXLabel.Text))
 	sh.Initialize("sh","layer2img",Array(filename,layername))
 	sh.WorkingDirectory=File.GetFileParent(XLSXLabel.Text)
 	sh.Run(-1)
@@ -407,15 +476,25 @@ Sub getRes(psdDir As String,filename As String) As ResumableSub
 	Return resolution
 End Sub
 
-Sub getFontsize(psdDir As String) As ResumableSub
-	Dim psdName As String
-	For Each filename As String In File.ListFiles(psdDir)
-		If filename.ToLowerCase.EndsWith(".psd") Then
-			psdName=filename
-		End If
-	Next
-	wait for (getRes(psdDir,psdName)) Complete (resolution As Int)
+Sub getFontsize(psdDir As String,filename As String) As ResumableSub
+	wait for (getRes(psdDir,filename)) Complete (resolution As Int)
 	Dim suitableFontSize As Int = 48/(resolution/72)
 	Return suitableFontSize
 End Sub
 
+
+Sub findPSD(dirPath As String)
+	Dim files As List=File.ListFiles(dirPath)
+	For Each filename As String In files
+		If ImagesListView.Items.IndexOf(filename)<>-1 Then
+			Continue
+		End If
+		If File.IsDirectory(dirPath,filename) Then
+			findPSD(File.Combine(dirPath,filename))
+		End If
+		Dim lowerCaseName As String=filename.ToLowerCase
+		If lowerCaseName.EndsWith(".psd") Then
+			
+		End If
+	Next
+End Sub
