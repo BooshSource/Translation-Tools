@@ -1,0 +1,108 @@
+﻿AppType=JavaFX
+Build1=Default,b4j.example
+File1=main.bjl
+FileGroup1=Default Group
+Group=Default Group
+Library1=jcore
+Library2=jfx
+Library3=javaobject
+Module1=Tokenizer
+Module2=Token
+NumberOfFiles=1
+NumberOfLibraries=3
+NumberOfModules=2
+Version=7.32
+@EndOfDesignText@
+#Region Project Attributes 
+	#MainFormWidth: 600
+	#MainFormHeight: 600 
+#End Region
+
+#AdditionalJar: kuromoji-core-0.9.0
+#AdditionalJar: kuromoji-ipadic-0.9.0
+
+Sub Process_Globals
+	Private fx As JFX
+	Private MainForm As Form
+	Private TextArea1 As TextArea
+	Private TextArea2 As TextArea
+End Sub
+
+Sub AppStart (Form1 As Form, Args() As String)
+	MainForm = Form1
+	MainForm.RootPane.LoadLayout("main") 'Load the layout file.
+	MainForm.Show
+End Sub
+
+'Return true to allow the default exceptions handler to handle the uncaught exception.
+Sub Application_Error (Error As Exception, StackTrace As String) As Boolean
+	Return True
+End Sub
+
+Sub Button2_MouseClicked (EventData As MouseEvent)
+	Dim sb As StringBuilder
+	sb.Initialize
+	Dim tokenizer1 As Tokenizer
+	tokenizer1.Initialize
+	Dim previousPOS As String
+	Dim tokens As List = tokenizer1.Tokenize(TextArea1.Text)
+	For Each item As JavaObject In tokens
+		Dim token1 As Token
+		token1.Initialize(item)
+		Log(token1.Surface)
+		Log(token1.PartOfSpeechLevel1)
+	    If token1.PartOfSpeechLevel1="動詞" Then
+			sb.Append(CRLF)
+		End If
+
+		If token1.PartOfSpeechLevel1="記号" Then
+			Dim text As String = sb.ToString
+			sb.Initialize
+			sb.Append(text.Trim)
+		End If
+		
+		If previousPOS="助詞" And token1.PartOfSpeechLevel1="助詞" Then
+			Dim text As String = sb.ToString
+			sb.Initialize
+			sb.Append(text.Trim)
+		End If
+		
+		sb.Append(token1.Surface)
+		
+		If token1.PartOfSpeechLevel1="助詞" And token1.Surface<>"の" Then
+			sb.Append(CRLF)
+		End If
+		
+		If token1.PartOfSpeechLevel1="感動詞" Then
+			sb.Append(CRLF)
+		End If
+		
+		If token1.PartOfSpeechLevel1="記号" Then
+			sb.Append(CRLF)
+		End If
+
+		previousPOS=token1.PartOfSpeechLevel1
+	Next
+	Dim result As String = sb.ToString.Replace(CRLF&CRLF,CRLF)
+	TextArea2.Text=result.Trim
+End Sub
+
+Sub Button1_MouseClicked (EventData As MouseEvent)
+	Dim sb As StringBuilder
+	sb.Initialize
+	Dim tokenizer1 As Tokenizer
+	tokenizer1.Initialize
+	Dim tokens As List = tokenizer1.Tokenize(TextArea1.Text)
+	For Each item As JavaObject In tokens
+		Dim token1 As Token
+		token1.Initialize(item)
+		sb.Append(token1.Surface).Append(" ")
+	Next
+	sb.Append(CRLF).Append(CRLF)
+	For Each item As JavaObject In tokens
+		Dim token1 As Token
+		token1.Initialize(item)
+		sb.Append(token1.Surface).Append(" ").Append(token1.AllFeatures).Append(CRLF)
+	Next
+	TextArea2.Text=sb.ToString
+End Sub
